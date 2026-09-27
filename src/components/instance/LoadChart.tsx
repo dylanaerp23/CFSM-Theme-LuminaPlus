@@ -32,6 +32,7 @@ import {
   fillMissingMetricPoints,
   interpolateMetricGaps,
   mergeHistoryWithLivePoints,
+  resampleLiveTail,
 } from "./chartData";
 import { formatByteRateLabel, formatBytes, formatTrafficRateLabel } from "@/utils/format";
 import { historyChartRangeSeconds, historyCoverageLabel } from "@/utils/historyRange";
@@ -574,8 +575,11 @@ export function LoadChart({
           : seeded.filter((point) => point.time >= newest - REALTIME_WINDOW_SECONDS);
       return windowed.slice(-REALTIME_SAMPLE_LIMIT);
     }
-    // 历史档：历史那段以历史为准，实时样本只接在它后面。
-    return mergeHistoryWithLivePoints(historyPoints, realtimePoints);
+    // 历史档：历史那段以历史为准，实时样本只接在它后面，并按历史的点距并格（不然挤成一团）。
+    return mergeHistoryWithLivePoints(
+      historyPoints,
+      resampleLiveTail(historyPoints, realtimePoints, LOAD_INTERPOLATE_KEYS),
+    );
   }, [historyPoints, isRealtime, realtimePoints]);
 
   // API 各回退路径不保证返回顺序,最新值必须取自按时间排好序的 historyRecords。
