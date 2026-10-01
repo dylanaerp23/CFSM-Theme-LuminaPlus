@@ -191,7 +191,7 @@ function HomeOverviewCards({
       aria-label="首页总览"
     >
       <article className="overview-card" data-metric="online">
-        <span className="overview-card-label">在线节点</span>
+        <span className="overview-card-label">在线服务器</span>
         <div className="overview-card-main">
           <p className="overview-card-value">
             {overview.onlineNodes}
