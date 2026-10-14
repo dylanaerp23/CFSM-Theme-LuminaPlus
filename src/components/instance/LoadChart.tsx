@@ -244,6 +244,7 @@ function buildBaseOptions({
   axisKind,
   getXRange,
   fillAllSeries,
+  syncKey,
 }: {
   title: string;
   keys: string[];
@@ -258,13 +259,25 @@ function buildBaseOptions({
    */
   getXRange?: (() => [number, number] | null) | null;
   fillAllSeries?: boolean;
+  /** 同一个 key 的几张图游标联动：鼠标在一张图上移动，其余几张在同一时刻显示各自的小窗口。 */
+  syncKey: string;
 }): Omit<uPlot.Options, "width" | "height"> {
   const isDark = resolvedAppearance === "dark";
   const { grid, text } = getAxisColors(isDark);
 
   return {
     padding: [8, 12, 10, 2],
-    cursor: { drag: { x: true, y: false } },
+    cursor: {
+      drag: { x: true, y: false },
+      // 六张图按时间联动游标（站长 2026-10-14 要的）。只同步横轴：纵轴各图单位不同，别的图按鼠标的相对高度放游标。
+      // 只广播移动（移出图表时 uPlot 也是发一次坐标为负的移动，别的图跟着收起）；拖选缩放不联动，
+      // 免得在一张图上拖一下六张一起变。触屏的游标走 setCursor、不广播，手机上图是竖排的，联动没意义。
+      sync: {
+        key: syncKey,
+        scales: ["x", null],
+        filters: { pub: (type) => type === "mousemove" },
+      },
+    },
     legend: { show: false },
     scales: {
       x: getXRange
@@ -392,6 +405,7 @@ const ChartCard = memo(function ChartCard({
         axisKind,
         getXRange: hasXRange ? readXRange : null,
         fillAllSeries,
+        syncKey: `load-charts:${uuid}`,
       }),
     [
       axisKind,
@@ -404,6 +418,7 @@ const ChartCard = memo(function ChartCard({
       resolvedAppearance,
       spanGaps,
       title,
+      uuid,
     ],
   );
 
