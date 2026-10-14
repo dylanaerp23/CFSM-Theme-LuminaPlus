@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import {
   useEffect,
   useLayoutEffect,
@@ -362,7 +363,7 @@ export function RegionTabs({
   }, [order, draggingCode, controller]);
 
   return (
-    <section className="home-region-bar" aria-label="地区筛选">
+    <section className="home-region-bar" aria-label={t("region.filterLabel")}>
       <div
         ref={containerRef}
         className="home-region-chips"

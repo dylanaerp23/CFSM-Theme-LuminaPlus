@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -91,7 +92,7 @@ function formatCompactBytes(value: number): string {
 // 站点铭牌由 CSS 放进 AppShell 顶部留白，不占概览卡内容流。
 function HomeBrand({ siteName }: { siteName: string }) {
   return (
-    <header className="home-brand" aria-label="站点名称">
+    <header className="home-brand" aria-label={t("home.siteNameLabel")}>
       <h1 className="home-brand-title" title={siteName}>
         {siteName}
       </h1>
@@ -145,7 +146,7 @@ function HomeOverviewCards({
   const remainingValue = costSummary
     ? formatCnyMoney(costSummary.remainingCny)
     : costLoading
-      ? "计算中"
+      ? t("home.assetsCalculating")
       : "—";
   const trafficDetailLabel = `↑ ${formatBytes(overview.trafficUp)} · ↓ ${formatBytes(overview.trafficDown)}`;
   const trafficCompactLabel = `↑${formatCompactBytes(overview.trafficUp)} ↓${formatCompactBytes(overview.trafficDown)}`;
@@ -188,10 +189,10 @@ function HomeOverviewCards({
     <section
       className={`home-overview${dense ? " is-dense" : ""}`}
       data-cards={showAssetCard ? 4 : 3}
-      aria-label="首页总览"
+      aria-label={t("home.overviewLabel")}
     >
       <article className="overview-card" data-metric="online">
-        <span className="overview-card-label">在线节点</span>
+        <span className="overview-card-label">{t("home.onlineNodes")}</span>
         <div className="overview-card-main">
           <p className="overview-card-value">
             {overview.onlineNodes}
@@ -221,7 +222,7 @@ function HomeOverviewCards({
       </article>
 
       <article className="overview-card" data-metric="bandwidth">
-        <span className="overview-card-label">实时带宽</span>
+        <span className="overview-card-label">{t("home.liveBandwidth")}</span>
         <div className="overview-card-main">
           <p
             className="overview-card-value"
@@ -242,7 +243,7 @@ function HomeOverviewCards({
 
       <article className="overview-card" data-metric="traffic">
         <div className="overview-card-head">
-          <span className="overview-card-label">累计流量</span>
+          <span className="overview-card-label">{t("home.totalTraffic")}</span>
         </div>
         <div className="overview-card-main">
           <p className="overview-card-value">
@@ -262,7 +263,7 @@ function HomeOverviewCards({
       {showAssetCard && (
       <article className="overview-card" data-metric="asset">
         <div className="overview-card-head">
-          <span className="overview-card-label">资产概览</span>
+          <span className="overview-card-label">{t("home.assets")}</span>
           {/* 提醒天数设成 0 时这个组件没有提醒可显示，会退成资产页入口图标。 */}
           {showDetailButton && (
             <RenewalReminder nodes={renewalNodes} warningDays={renewalReminderDays} />
@@ -273,7 +274,7 @@ function HomeOverviewCards({
         </div>
         <div className="overview-card-footer">
           <p className="overview-card-caption">
-            {costRatesMissing ? "汇率获取失败 · 仅统计人民币" : "实时汇率计算"}
+            {costRatesMissing ? t("home.ratesFailed") : t("home.ratesLive")}
           </p>
           {renderRating(assetRating)}
         </div>
@@ -293,14 +294,14 @@ function GroupTabs({
   onSelectGroup: (group: string) => void;
 }) {
   return (
-    <div className="home-group-tabs" role="group" aria-label="节点分组">
+    <div className="home-group-tabs" role="group" aria-label={t("home.groupsLabel")}>
       <button
         type="button"
         aria-pressed={selectedGroup === HOME_ALL_GROUP}
         data-active={selectedGroup === HOME_ALL_GROUP ? "true" : "false"}
         onClick={() => onSelectGroup(HOME_ALL_GROUP)}
       >
-        全部
+        {t("common.all")}
       </button>
       {groups.map((group) => (
         <button
@@ -326,7 +327,7 @@ export function NodeGrid() {
   const { hydrated: storeHydrated, nodeInfoError } = useNodeStoreStatus();
   const { data: me } = useAuth();
   const { data: publicConfig } = usePublicConfig();
-  const siteName = publicConfig?.sitename?.trim() || "节点概览";
+  const siteName = publicConfig?.sitename?.trim() || t("home.defaultSiteName");
   const themeSettings = useThemeSettings();
   const { mode } = useViewMode();
   const sort = useHomeSort();
@@ -633,8 +634,8 @@ export function NodeGrid() {
         className="flex h-[40vh] flex-col items-center justify-center gap-2 text-[var(--text-tertiary)]"
         aria-live="polite"
       >
-        <span className="text-[14px]">节点数据暂时无法加载</span>
-        <span className="text-[12px]">正在等待后端自动重试</span>
+        <span className="text-[14px]">{t("home.loadFailed")}</span>
+        <span className="text-[12px]">{t("home.loadRetrying")}</span>
       </div>
     );
   }
@@ -646,8 +647,8 @@ export function NodeGrid() {
         <Link
           to="/assets"
           className="cost-summary-ball show"
-          aria-label="打开资产统计页"
-          title="资产统计"
+          aria-label={t("home.openAssets")}
+          title={t("home.assetsTitle")}
         >
           <span className="cost-summary-ball-icon" aria-hidden>
             <CircleDollarSign size={16} />
@@ -685,8 +686,8 @@ export function NodeGrid() {
       <>
         {homeHeader}
         <div className="flex h-[40vh] flex-col items-center justify-center gap-2 text-[var(--text-tertiary)]">
-          <span className="text-[15px]">尚未连接到任何节点</span>
-          <span className="text-[12px]">等待后端推送或前往管理后台添加</span>
+          <span className="text-[15px]">{t("home.noNodes")}</span>
+          <span className="text-[12px]">{t("home.noNodesHint")}</span>
         </div>
       </>
     );

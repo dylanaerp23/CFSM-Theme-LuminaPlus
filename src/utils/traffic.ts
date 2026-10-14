@@ -1,3 +1,5 @@
+import { t } from "@/i18n";
+
 // 与后端 computeUsedByType 保持一致，空或未知类型按 max 处理。
 export interface TrafficDisplay {
   fraction: number;
@@ -61,15 +63,15 @@ export function resolveTrafficUsage(
 export function trafficTypeLabel(type: string | null | undefined): string {
   switch ((type ?? "").trim().toLowerCase()) {
     case "up":
-      return "仅上行";
+      return t("trafficType.up");
     case "down":
-      return "仅下行";
+      return t("trafficType.down");
     case "sum":
-      return "上行+下行";
+      return t("trafficType.sum");
     case "min":
-      return "上下取小";
+      return t("trafficType.min");
     case "max":
     default:
-      return "上下取大";
+      return t("trafficType.max");
   }
 }

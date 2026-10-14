@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import {
   useCallback,
   useEffect,
@@ -64,8 +65,8 @@ export function PingLineSwitcher({
         aria-haspopup="true"
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
-        aria-label={`${taskName}，切换这一行的线路`}
-        title="切换线路"
+        aria-label={t("switcher.rowLabel", { task: taskName })}
+        title={t("switcher.title")}
         onClick={() => setOpen((value) => !value)}
         onKeyDown={(event) => {
           if (event.key !== "ArrowDown") return;
@@ -216,7 +217,7 @@ function PingLineMenu({
       id={id}
       className="ping-line-menu"
       role="group"
-      aria-label="切换线路"
+      aria-label={t("switcher.title")}
       onKeyDown={handleKeyDown}
     >
       {options.map((taskId) => {
@@ -233,7 +234,7 @@ function PingLineMenu({
             onClick={() => select(taskId)}
           >
             <span className="ping-line-menu-label">{carrierTaskName(taskId, carrierNames)}</span>
-            {swaps && <span className="ping-line-menu-hint">互换</span>}
+            {swaps && <span className="ping-line-menu-hint">{t("switcher.swap")}</span>}
             {active && <Check size={14} aria-hidden />}
           </button>
         );
@@ -244,11 +245,11 @@ function PingLineMenu({
           <button
             type="button"
             className="ping-line-menu-item"
-            title="这台节点的线路恢复成站点设置"
+            title={t("switcher.resetTitle")}
             onClick={reset}
           >
             <RotateCcw size={13} aria-hidden />
-            <span className="ping-line-menu-label">恢复默认</span>
+            <span className="ping-line-menu-label">{t("switcher.reset")}</span>
           </button>
         </>
       )}

@@ -1,3 +1,4 @@
+import { t, type MessageKey } from "@/i18n";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { AlertTriangle, ChevronLeft, ChevronRight, Grid3x3, LayoutGrid, List, Monitor, Palette, Rows3, Settings, SlidersHorizontal, Sun, Moon } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -17,17 +18,17 @@ const MetricColorPicker = lazy(() =>
 
 // 悬浮球切换按钮展示"下一档"的图标/文案(点击后会切到的视图),而不是当前视图——
 // 与 ThemeManage 里 NODE_VIEW_MODE_OPTIONS 的图标语义保持一致。
-const VIEW_MODE_META: Record<NodeViewMode, { icon: typeof LayoutGrid; label: string }> = {
-  large: { icon: LayoutGrid, label: "大视图" },
-  compact: { icon: Rows3, label: "小视图" },
-  mini: { icon: Grid3x3, label: "迷你视图" },
-  list: { icon: List, label: "列表视图" },
+const VIEW_MODE_META: Record<NodeViewMode, { icon: typeof LayoutGrid; labelKey: MessageKey }> = {
+  large: { icon: LayoutGrid, labelKey: "viewMode.large" },
+  compact: { icon: Rows3, labelKey: "viewMode.compact" },
+  mini: { icon: Grid3x3, labelKey: "viewMode.mini" },
+  list: { icon: List, labelKey: "viewMode.list" },
 };
 
 const APPEARANCE_OPTIONS = [
-  { value: "light", icon: Sun, label: "浅色" },
-  { value: "system", icon: Monitor, label: "跟随系统" },
-  { value: "dark", icon: Moon, label: "深色" },
+  { value: "light", icon: Sun, labelKey: "appearance.light" },
+  { value: "system", icon: Monitor, labelKey: "appearance.system" },
+  { value: "dark", icon: Moon, labelKey: "appearance.dark" },
 ] as const;
 
 export function FloatingControls({
@@ -85,16 +86,16 @@ export function FloatingControls({
                 <div
                   className="control-group floating-controls-appearance"
                   role="group"
-                  aria-label="外观选择"
+                  aria-label={t("quick.appearance")}
                 >
-                  {APPEARANCE_OPTIONS.map(({ value, icon: Icon, label }) => (
+                  {APPEARANCE_OPTIONS.map(({ value, icon: Icon, labelKey }) => (
                     <button
                       key={value}
                       type="button"
                       onClick={() => setAppearance(value)}
-                      aria-label={label}
+                      aria-label={t(labelKey)}
                       aria-pressed={appearance === value}
-                      title={label}
+                      title={t(labelKey)}
                       tabIndex={hiddenTabIndex}
                       className={clsx(
                         "control-button grid h-9 w-9 place-items-center",
@@ -108,9 +109,9 @@ export function FloatingControls({
                 <button
                   type="button"
                   onClick={toggleMode}
-                  aria-label="切换卡片视图"
+                  aria-label={t("quick.switchView")}
                   aria-pressed={isReducedView}
-                  title={`临时切换到${VIEW_MODE_META[nextMode].label}`}
+                  title={t("quick.switchTo", { view: t(VIEW_MODE_META[nextMode].labelKey) })}
                   tabIndex={hiddenTabIndex}
                   className={clsx(
                     "control-button grid h-9 w-9 place-items-center",
@@ -126,9 +127,9 @@ export function FloatingControls({
                       setColorsMounted(true);
                       setColorsOpen((value) => !value);
                     }}
-                    aria-label="卡片配色"
+                    aria-label={t("quick.cardColors")}
                     aria-pressed={colorsOpen}
-                    title="卡片配色"
+                    title={t("quick.cardColors")}
                     tabIndex={hiddenTabIndex}
                     className={clsx(
                       "control-button grid h-9 w-9 place-items-center",
@@ -143,8 +144,8 @@ export function FloatingControls({
             {showThemeManage && (
               <Link
                 to="/?view=theme-manage"
-                aria-label="主题设置"
-                title="主题设置"
+                aria-label={t("quick.themeSettings")}
+                title={t("quick.themeSettings")}
                 tabIndex={hiddenTabIndex}
                 className="control-button grid h-9 w-9 place-items-center"
               >
@@ -154,8 +155,8 @@ export function FloatingControls({
             {showAdmin && (
               <a
                 href={getAdminUrl()}
-                aria-label={me?.logged_in ? "管理" : "后台登录"}
-                title={me?.logged_in ? "管理" : "后台登录"}
+                aria-label={t(me?.logged_in ? "quick.admin" : "quick.adminLogin")}
+                title={t(me?.logged_in ? "quick.admin" : "quick.adminLogin")}
                 tabIndex={hiddenTabIndex}
                 className="control-button grid h-9 w-9 place-items-center"
               >
@@ -166,10 +167,10 @@ export function FloatingControls({
           <button
             type="button"
             className="control-button floating-controls-trigger grid h-9 w-9 place-items-center"
-            aria-label={collapsed ? "展开快捷按钮" : "收起快捷按钮"}
+            aria-label={t(collapsed ? "quick.expand" : "quick.collapse")}
             aria-expanded={!collapsed}
             onClick={toggleControls}
-            title={collapsed ? "展开快捷按钮" : "收起快捷按钮"}
+            title={t(collapsed ? "quick.expand" : "quick.collapse")}
           >
             <ToggleIcon size={16} />
             {showSyncWarning && collapsed && (
@@ -185,7 +186,7 @@ export function FloatingControls({
         {showSyncWarning && !collapsed && !colorsOpen && (
           <div className="floating-controls-sync-warning pointer-events-none flex items-center gap-2 rounded-full border border-[color-mix(in_srgb,var(--status-offline)_32%,transparent)] bg-[color-mix(in_srgb,var(--surface-a)_90%,transparent)] px-3 py-1 text-[11px] font-medium text-[var(--status-offline)] shadow-[0_10px_25px_-18px_rgba(0,0,0,0.8)] backdrop-blur">
             <AlertTriangle size={12} />
-            <span>实时状态同步异常，当前展示的是最近缓存</span>
+            <span>{t("quick.syncWarning")}</span>
           </div>
         )}
       </div>

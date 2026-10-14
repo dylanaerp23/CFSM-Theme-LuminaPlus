@@ -108,7 +108,7 @@ import {
   getDefaultOverviewRatingLabelText,
   type OverviewRatingKind,
 } from "@/utils/overviewRating";
-import { HOME_SORT_FIELDS, HOME_SORT_FIELD_LABELS } from "@/utils/homeSort";
+import { HOME_SORT_FIELDS, homeSortFieldLabel } from "@/utils/homeSort";
 
 const APPEARANCE_OPTIONS = [
   { value: "light", label: "浅色", icon: Sun },
@@ -1807,7 +1807,7 @@ export function ThemeManage() {
                           aria-pressed={draft.homeSortField === field}
                           onClick={() => patch("homeSortField", field)}
                         >
-                          {HOME_SORT_FIELD_LABELS[field]}
+                          {homeSortFieldLabel(field)}
                         </button>
                       ))}
                     </div>

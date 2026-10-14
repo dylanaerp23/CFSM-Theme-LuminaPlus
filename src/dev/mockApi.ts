@@ -416,6 +416,8 @@ export function installDevMockApi() {
         is_public: true,
         authorization: loggedIn,
         preferred_theme: "auto",
+        // 本地看多语言：地址里加 `&lang=en` / `es` / `zh` / `auto`，相当于后台「默认语言」。
+        default_language: new URLSearchParams(window.location.search).get("lang") ?? "zh",
         frontend_ws_timeout_minutes: 0,
         turnstile_enabled: MOCK_TURNSTILE,
         turnstile_login_enabled: false,

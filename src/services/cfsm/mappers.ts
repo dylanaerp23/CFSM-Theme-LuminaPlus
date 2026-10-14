@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import type { PingLiveSample } from "@/services/pingLiveStore";
 import {
   CARRIER_KEYS,
@@ -97,7 +98,7 @@ export function carrierTaskName(
   names: CarrierNames = DEFAULT_CARRIER_NAMES,
 ): string {
   const key = CARRIER_TASK_BY_ID.get(taskId)?.key;
-  return key ? names[key] : `线路 #${taskId}`;
+  return key ? names[key] : t("ping.lineN", { n: taskId });
 }
 
 export function carrierPingTasks(names: CarrierNames = DEFAULT_CARRIER_NAMES): PingTask[] {

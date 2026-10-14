@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { memo, useCallback, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -140,13 +141,13 @@ export const NodeCard = memo(function NodeCard({
             <div className="card-metric-section server-card-meta-grid">
               <FooterStat
                 icon={<Network size={13} strokeWidth={2} />}
-                label="TCP 连接"
+                label={t("card.tcp")}
                 value={node.connectionsTcp.toLocaleString()}
                 color="var(--progress-network)"
               />
               <FooterStat
                 icon={<Network size={13} strokeWidth={2} />}
-                label="UDP 连接"
+                label={t("card.udp")}
                 value={node.connectionsUdp.toLocaleString()}
                 color="var(--progress-network)"
               />
@@ -251,14 +252,14 @@ function NodeMetricSection({
         label="CPU"
         valueText={node.cpuPct.toFixed(2)}
         unit="%"
-        detailText={`${node.cpu_cores || 0} 核`}
+        detailText={t("metric.cpuCores", { n: node.cpu_cores || 0 })}
         fraction={node.cpuPct / 100}
         redrawKey={redrawKey}
         paint="var(--progress-cpu)"
       />
       <MetricBar
         icon={<MemoryStick size={13} strokeWidth={2} />}
-        label="内存"
+        label={t("metric.memory")}
         valueText={node.ramPct.toFixed(2)}
         unit="%"
         detailText={`${formatBytes(node.ramUsed)} / ${formatBytes(node.ramTotal)}`}
@@ -268,7 +269,7 @@ function NodeMetricSection({
       />
       <MetricBar
         icon={<HardDrive size={13} strokeWidth={2} />}
-        label="磁盘"
+        label={t("metric.disk")}
         valueText={node.diskPct.toFixed(1)}
         unit="%"
         detailText={`${formatBytes(node.diskUsed)} / ${formatBytes(node.diskTotal)}`}
@@ -278,7 +279,7 @@ function NodeMetricSection({
       />
       <MetricBar
         icon={<Gauge size={13} strokeWidth={2} />}
-        label="负载"
+        label={t("metric.load")}
         valueText={node.load1.toFixed(2)}
         // 1 / 5 / 15 分钟负载，和小卡 / 迷你卡气泡里同一个写法；原来这一行空着，和左边磁盘的「已用 / 总量」对不齐。
         detailText={`${node.load1.toFixed(2)} / ${node.load5.toFixed(2)} / ${node.load15.toFixed(2)}`}
@@ -308,8 +309,7 @@ function NodeTrafficSection({
   return (
     <div className="card-metric-section server-traffic-section">
       <TrafficStat
-        direction="上行"
-        totalLabel="出站"
+        direction="up"
         rate={upRate}
         total={formatBytes(node.trafficUp)}
         samples={trafficTrend.up}
@@ -320,8 +320,7 @@ function NodeTrafficSection({
         icon={<ArrowUp size={15} strokeWidth={2.4} />}
       />
       <TrafficStat
-        direction="下行"
-        totalLabel="入站"
+        direction="down"
         rate={downRate}
         total={formatBytes(node.trafficDown)}
         samples={trafficTrend.down}
@@ -380,12 +379,12 @@ const NodeTrafficQuota = memo(function NodeTrafficQuota({
   return (
     <div
       className="card-metric-section traffic-quota"
-      title={`流量阈值 · ${typeLabel}`}
+      title={t("card.trafficQuotaTitle", { type: typeLabel })}
     >
       <div className="traffic-quota-head">
         <span className="traffic-quota-label">
           <Database size={13} strokeWidth={2} />
-          <span>剩余流量</span>
+          <span>{t("card.remainingTraffic")}</span>
           <strong className="traffic-quota-remain">{remainingLabel}</strong>
         </span>
         <span className="traffic-quota-usage">{detail}</span>
@@ -463,14 +462,14 @@ const NodeHealthSection = memo(function NodeHealthSection({
         <div className="server-health-head">
           <div className="server-health-label">
             <Clock3 size={13} strokeWidth={2} />
-            <span>延迟</span>
+            <span>{t("card.latency")}</span>
           </div>
           <span
             className="server-health-value tabular"
             style={{ color: latencyColor }}
             title={
               pingError && ping.lastValue != null
-                ? "首页 Ping 刷新失败，显示上次数据"
+                ? t("card.pingStale")
                 : undefined
             }
           >
@@ -494,7 +493,7 @@ const NodeHealthSection = memo(function NodeHealthSection({
               onHoverIndex={onLatencyHover}
             />
           ) : (
-            <div className="server-health-placeholder">未配置首页 Ping</div>
+            <div className="server-health-placeholder">{t("card.pingUnsetTitle")}</div>
           )}
           <HealthBucketTooltip
             text={latencyTooltip}
@@ -507,14 +506,14 @@ const NodeHealthSection = memo(function NodeHealthSection({
         <div className="server-health-head">
           <div className="server-health-label">
             <Unplug size={13} strokeWidth={2} />
-            <span>丢包率</span>
+            <span>{t("card.lossRate")}</span>
           </div>
           <span
             className="server-health-value tabular"
             style={{ color: lossColor }}
             title={
               pingError && ping.loss != null
-                ? "首页 Ping 刷新失败，显示上次数据"
+                ? t("card.pingStale")
                 : undefined
             }
           >
@@ -538,7 +537,7 @@ const NodeHealthSection = memo(function NodeHealthSection({
               onHoverIndex={onLossHover}
             />
           ) : (
-            <div className="server-health-placeholder">未配置首页 Ping</div>
+            <div className="server-health-placeholder">{t("card.pingUnsetTitle")}</div>
           )}
           <HealthBucketTooltip
             text={lossTooltip}
@@ -570,7 +569,7 @@ function FooterPriceChip({ renewalPrice, titled }: { renewalPrice: string; title
   return (
     <span
       className="dstatus-price-chip"
-      title={titled ? `续费价格 ${renewalPrice}` : undefined}
+      title={titled ? t("card.renewalPriceTitle", { price: renewalPrice }) : undefined}
     >
       <CircleDollarSign size={12} strokeWidth={2.2} />
       {renewalPrice}
@@ -660,14 +659,14 @@ function NodeCardFooter({
       <div className="server-card-meta-grid">
         <FooterStat
           icon={<RefreshCw size={13} strokeWidth={2} />}
-          label="在线"
+          label={t("card.uptimeLabel")}
           value={uptime.value}
           unit={uptime.unit}
           color="var(--progress-cpu)"
         />
         <FooterStat
           icon={<Calendar size={13} strokeWidth={2} />}
-          label="到期"
+          label={t("card.expire")}
           value={expire.value}
           unit={expire.unit}
           color={expireColor}
@@ -695,7 +694,6 @@ function NodeCardFooter({
 
 function TrafficStat({
   direction,
-  totalLabel,
   rate,
   total,
   samples,
@@ -705,8 +703,7 @@ function TrafficStat({
   color,
   icon,
 }: {
-  direction: "下行" | "上行";
-  totalLabel: "入站" | "出站";
+  direction: "up" | "down";
   rate: ByteRateDisplay;
   total: string;
   samples: TrafficTrendSample[];
@@ -718,12 +715,16 @@ function TrafficStat({
 }) {
   // 按当前速率单位档取热力色:文字/圆点/实时点都随速度量级变色,图标仍用方向色(color)区分上下行。
   const speedColor = speedRateColor(rate.unit);
+  const directionLabel = t(direction === "up" ? "traffic.upload" : "traffic.download");
+  // 上行累计的是出站流量、下行累计的是入站流量。
+  const totalLabel = t(direction === "up" ? "traffic.outbound" : "traffic.inbound");
+  const liveLabel = live ? t(active ? "traffic.live" : "traffic.idle") : t("status.offline");
   return (
     <div className="traffic-stat">
       <div className="traffic-stat-head">
         <div className="traffic-stat-label">
           <span style={{ color }}>{icon}</span>
-          <span style={{ color: speedColor }}>{direction}</span>
+          <span style={{ color: speedColor }}>{directionLabel}</span>
         </div>
         <span className="traffic-stat-value tabular" style={{ color: speedColor }}>
           {rate.value}
@@ -735,8 +736,8 @@ function TrafficStat({
         <span
           className="traffic-stat-live"
           data-live={live ? "true" : "false"}
-          title={live ? (active ? "实时" : "空闲") : "离线"}
-          aria-label={live ? (active ? "实时" : "空闲") : "离线"}
+          title={liveLabel}
+          aria-label={liveLabel}
         >
           <span
             className="traffic-stat-live-dot"
@@ -744,12 +745,12 @@ function TrafficStat({
               background: speedColor,
             }}
           />
-          {live && <span>{active ? "实时" : "空闲"}</span>}
+          {live && <span>{liveLabel}</span>}
         </span>
       </div>
       <div className="traffic-stat-foot">
         <div className="traffic-stat-total-label">
-          <GlobeArrow direction={totalLabel} color={color} />
+          <GlobeArrow inbound={direction === "down"} color={color} />
           <span>{totalLabel}</span>
         </div>
         <span className="tabular">{total}</span>
@@ -813,13 +814,13 @@ function TrafficDotStrip({
 }
 
 function GlobeArrow({
-  direction,
+  inbound,
   color,
 }: {
-  direction: "入站" | "出站";
+  inbound: boolean;
   color: string;
 }) {
-  const isInbound = direction === "入站";
+  const isInbound = inbound;
   return (
     <span
       className="relative inline-flex items-center justify-center"
