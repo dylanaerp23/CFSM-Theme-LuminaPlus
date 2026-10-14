@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useThemeSettings } from "@/hooks/useThemeSettings";
 import { getAdminUrl } from "@/services/cfsm/config";
 import type { NodeViewMode } from "@/utils/themeSettings";
+import { readQuickControlsExpanded, writeQuickControlsExpanded } from "@/utils/quickControlsStorage";
 import { clsx } from "clsx";
 
 const MetricColorPicker = lazy(() =>
@@ -39,7 +40,8 @@ export function FloatingControls({
   const { data: me } = useAuth();
   const themeSettings = useThemeSettings();
   const { failureStreak } = useNodeStoreStatus();
-  const [collapsed, setCollapsed] = useState(true);
+  // 上次展开着就接着展开（只在宽屏上，见 quickControlsStorage）。
+  const [collapsed, setCollapsed] = useState(() => !readQuickControlsExpanded());
   const [colorsOpen, setColorsOpen] = useState(false);
   const [colorsMounted, setColorsMounted] = useState(false);
   const settingsReady = themeSettings.isReady;
@@ -55,16 +57,16 @@ export function FloatingControls({
   // 只要不在最宽松的大卡默认态,就视为"已切换"，按钮保持高亮。
   const isReducedView = mode !== "large";
   useEffect(() => {
-    onExpandedChange?.(false);
-    return () => onExpandedChange?.(false);
-  }, [onExpandedChange]);
+    onExpandedChange?.(!collapsed);
+  }, [collapsed, onExpandedChange]);
+  useEffect(() => () => onExpandedChange?.(false), [onExpandedChange]);
 
   const toggleControls = () => {
     // 收起快捷栏时同时结束子面板状态，避免下次展开时调色盘自动复现。
     const nextCollapsed = !collapsed;
     if (nextCollapsed) setColorsOpen(false);
     setCollapsed(nextCollapsed);
-    onExpandedChange?.(!nextCollapsed);
+    writeQuickControlsExpanded(!nextCollapsed);
   };
 
   return (
