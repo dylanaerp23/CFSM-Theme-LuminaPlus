@@ -408,6 +408,12 @@
   gap: calc(3px - var(--ci-shrink) * 0.35px);
 }
 
+/* 第一格（实时速率）比别的格多一排波形点。别的格底下垫出同样的高度，三格的两行文字才落在同一条线上；
+   不垫的话各格各自竖直居中，第一格的字比后面几格高 5 像素左右。7px 是波形点那一排的高度。 */
+.compact-node-info-tile + .compact-node-info-tile .compact-node-info-content {
+  padding-bottom: calc(7px + 3px - var(--ci-shrink) * 0.35px);
+}
+
 .compact-node-info-row {
   display: flex;
   min-width: 0;
@@ -735,6 +741,11 @@
 
   .compact-node-vitals {
     gap: 9px;
+  }
+
+  /* 延迟区的栏间距跟着指标区一起收窄，两栏分界才在一条竖线上。 */
+  .compact-node-card .multi-ping-status.is-compact .multi-ping-columns {
+    column-gap: 9px;
   }
 
   .compact-node-chip-row {

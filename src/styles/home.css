@@ -108,6 +108,12 @@
   gap: 10px;
 }
 
+/* 标题行右边的图标按钮（资产入口 / 续费提醒，24px）比标题文字高，不让它把这一行撑高：
+   撑高了这张卡的标题和大数字就比旁边三张低 4 像素左右。 */
+.overview-card-head > :not(.overview-card-label) {
+  margin-block: -4px;
+}
+
 .overview-card-label {
   min-width: 0;
   overflow: hidden;
@@ -795,6 +801,7 @@
     padding: 0 10px;
     font-size: 11px;
   }
+
 }
 
 /* 地区筛选栏:与分组栏同一套面板视觉(surface-a + 描边 + 圆角 + 浮起阴影);国旗 chip 换行铺开。
@@ -926,7 +933,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 38px;
+  /* 和同一行的分组栏等高（32px 的标签 + 上下 5px 内边距 + 描边）。 */
+  height: 44px;
   padding: 0 12px;
   border: 1px solid color-mix(in srgb, var(--border-strong) 54%, transparent);
   border-radius: 14px;
@@ -943,6 +951,13 @@
     color 160ms ease,
     border-color 160ms ease,
     background 160ms ease;
+}
+
+/* 分组栏的标签在窄屏下矮 2px（见上面 560px 那段），排序按钮跟着。写在基础规则后面才压得过它。 */
+@media (max-width: 560px) {
+  .home-sort-trigger {
+    height: 42px;
+  }
 }
 
 .home-sort-trigger svg {

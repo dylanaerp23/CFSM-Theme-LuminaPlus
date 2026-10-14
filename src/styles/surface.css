@@ -807,6 +807,7 @@ body::after {
   .instance-segmented.is-even:has(> button:nth-child(5):last-child) > button:nth-child(n + 4) {
     grid-column: span 3;
   }
+
 }
 
 /* 选项多的字段（默认排序维度有 5 个）独占一行，剩下的三项并排，高度才齐。 */
@@ -1035,6 +1036,17 @@ body::after {
 /* 说明文字只在桌面端的竖排导航里出现，手机上横滑标签放不下。 */
 .theme-tab-hint {
   display: none;
+}
+
+/* 横排时五个分组平分一行：按内容宽度排的话 375 宽的手机上最后一个「延迟」被切掉一半，要横滑才看得到。
+   屏幕再窄、平分后放不下内容时，标签不会缩到比内容窄，照旧横滑。 */
+@media (max-width: 899px) {
+  .theme-tab {
+    flex: 1 1 0;
+    justify-content: center;
+    gap: 5px;
+    padding-inline: 6px;
+  }
 }
 
 @media (min-width: 900px) {
@@ -1649,6 +1661,26 @@ body::after {
   font-size: 13px;
 }
 
+/* 选项多的（默认线路最多 8 条）按固定列数排成整齐的几行。flex 换行时放不下的那一个会独占一整行
+   （8 个排成 7 + 1），列数由组件按选项数给。 */
+.instance-segmented.is-prominent.is-columns {
+  display: grid;
+  grid-template-columns: repeat(var(--segment-columns, 4), minmax(0, 1fr));
+}
+
+.instance-segmented.is-prominent.is-columns button {
+  min-width: 0;
+  padding: 0 8px;
+}
+
+/* 格子窄（手机）时每行两个。容器查询的那一层见 .setting-segment-slot；写在这里而不是那段里，
+   是因为同权重的规则后写的生效。 */
+@container setting-segment (max-width: 430px) {
+  .instance-segmented.is-prominent.is-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .instance-segmented.is-prominent button[data-active="true"] {
   border-color: color-mix(in srgb, var(--accent-500) 42%, var(--border));
   background: color-mix(in srgb, var(--accent-500) 9%, var(--surface-elev));
@@ -1747,6 +1779,11 @@ body::after {
   border-radius: 999px;
   background: color-mix(in srgb, var(--surface-elev) 84%, transparent);
   padding: 0 10px;
+}
+
+/* 和同一行的「断点连线」「刷新」按钮等高。 */
+.instance-chart-meta span {
+  min-height: 30px;
 }
 
 .instance-chart-meta strong {

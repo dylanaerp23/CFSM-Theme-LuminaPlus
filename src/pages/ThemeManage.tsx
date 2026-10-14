@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type ComponentPropsWithoutRef,
+  type CSSProperties,
 } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -146,6 +147,11 @@ const OVERVIEW_RATING_LABEL_FIELDS: Array<{
   { key: "bandwidth", title: "实时带宽", toggleKey: "showBandwidthRating" },
   { key: "asset", title: "资产概览", toggleKey: "showAssetRating" },
 ];
+
+/** 选项多的分段控件排几列：4 个以内一行放完，再多就对半分成两行（8 个 → 4 + 4），不留孤零零的一个。 */
+function segmentColumns(count: number) {
+  return count <= 4 ? Math.max(1, count) : Math.ceil(count / 2);
+}
 
 function sortTasks(tasks: PingTask[]) {
   return [...tasks].sort((left, right) => {
@@ -747,7 +753,7 @@ const PremiumList = memo(function PremiumList({
                     ? "实际收购价（人民币），留空即清除记录"
                     : "该节点已忽略或汇率缺失，无法折算剩余价值"
                 }
-                className="surface-inset w-24 px-2 py-1 text-right text-[13px] outline-none disabled:opacity-45"
+                className="surface-inset h-[30px] w-24 px-2 py-1 text-right text-[13px] outline-none disabled:opacity-45"
               />
               <input
                 type="date"
@@ -763,7 +769,7 @@ const PremiumList = memo(function PremiumList({
                     ? "收购日期：修改后会按当前价格、周期、到期日和汇率回算该日剩余价值，重新计算并固化溢价"
                     : "该节点已忽略或汇率缺失，无法折算剩余价值"
                 }
-                className="surface-inset w-[8.75rem] px-2 py-1 text-[12px] outline-none disabled:opacity-45"
+                className="surface-inset h-[30px] w-[8.75rem] px-2 py-1 text-[12px] outline-none disabled:opacity-45"
               />
             </div>
           </div>
@@ -2421,7 +2427,24 @@ export function ThemeManage() {
                               没单独指定的节点都走这条
                             </span>
                           </div>
-                          <div className="instance-segmented is-prominent" role="group" aria-label="默认线路">
+                          <div className="setting-segment-slot">
+                          <div
+                            className="instance-segmented is-prominent is-columns"
+                            role="group"
+                            aria-label="默认线路"
+                            style={
+                              {
+                                "--segment-columns": segmentColumns(
+                                  sortedTasks.length +
+                                    (sortedTasks.some(
+                                      (task) => task.id === draft.homepageDefaultPingTaskId,
+                                    )
+                                      ? 0
+                                      : 1),
+                                ),
+                              } as CSSProperties
+                            }
+                          >
                             {!sortedTasks.some(
                               (task) => task.id === draft.homepageDefaultPingTaskId,
                             ) && (
@@ -2450,6 +2473,7 @@ export function ThemeManage() {
                                 </button>
                               );
                             })}
+                          </div>
                           </div>
                           <p className="mt-2 setting-hint">
                             新加的节点也自动跟着它，不用回来一台台绑；个别节点想看别的线路，用下面的「逐节点指定线路」。

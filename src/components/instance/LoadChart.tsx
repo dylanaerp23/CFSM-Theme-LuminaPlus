@@ -223,6 +223,14 @@ function formatCountAxisValue(value: number, min: number, max: number) {
  */
 const SPLINE_PATHS = uPlot.paths.spline?.();
 
+/**
+ * 六张负载图共用的纵轴宽度，按刻度文字最宽的那张（网络，如「100.0 Mbps」）定。
+ *
+ * 原来百分比 / 计数图 52、磁盘 IO 72、网络 78，同一列上下两张图的绘图区左边差 20~26 像素
+ * （站长 2026-10-14 要求对齐）。别再按图单独给宽度。
+ */
+const LOAD_Y_AXIS_SIZE = 78;
+
 // 不含尺寸的配置。width/height 由调用方在另一个 memo 里加上，resize 时只改这两个 key，
 // uplot-react 就会调 setSize() 而不是重建整个 chart。(用普通函数而非 hook——它不调任何
 // hook；之前的 `use` 前缀会触发 rules-of-hooks lint。)
@@ -234,7 +242,6 @@ function buildBaseOptions({
   rangeHours,
   spanGaps,
   axisKind,
-  axisSize = 52,
   getXRange,
   fillAllSeries,
 }: {
@@ -245,7 +252,6 @@ function buildBaseOptions({
   rangeHours: number;
   spanGaps?: boolean;
   axisKind: "percent" | "network" | "byteRate" | "count";
-  axisSize?: number;
   /**
    * 历史档钉住的横轴区间，传取值函数而不是区间本身：实时样本每接上一个，区间右端就往后推一次，
    * 区间要是进了 options，uplot-react 比出 options 变了就把整张图销毁重建（每一两秒六张图全部重画）。
@@ -278,7 +284,7 @@ function buildBaseOptions({
         stroke: text,
         grid: { stroke: grid, width: 1 },
         ticks: { stroke: grid },
-        size: axisSize,
+        size: LOAD_Y_AXIS_SIZE,
         values: (self, splits) => {
           const min = Number(self.scales.y.min ?? 0);
           const max = Number(self.scales.y.max ?? 0);
@@ -331,7 +337,6 @@ const ChartCard = memo(function ChartCard({
   unit = "",
   spanGaps,
   axisKind,
-  axisSize,
   xRange,
   fillAllSeries,
   accent,
@@ -349,7 +354,6 @@ const ChartCard = memo(function ChartCard({
   unit?: string;
   spanGaps?: boolean;
   axisKind: "percent" | "network" | "byteRate" | "count";
-  axisSize?: number;
   xRange?: [number, number] | null;
   fillAllSeries?: boolean;
   /** 卡片边框/图标的主色。默认跟随第一条线，指标本身有固定色时用它覆盖。 */
@@ -386,13 +390,11 @@ const ChartCard = memo(function ChartCard({
         rangeHours,
         spanGaps,
         axisKind,
-        axisSize,
         getXRange: hasXRange ? readXRange : null,
         fillAllSeries,
       }),
     [
       axisKind,
-      axisSize,
       colors,
       fillAllSeries,
       hasXRange,
@@ -792,7 +794,6 @@ export function LoadChart({
             rangeHours={hours}
             spanGaps={connectNulls}
             axisKind="byteRate"
-            axisSize={72}
             xRange={requestedXRange}
             fillAllSeries
             accent={CHART_PALETTE.disk}
@@ -839,7 +840,6 @@ export function LoadChart({
           rangeHours={hours}
           spanGaps={connectNulls}
           axisKind="network"
-          axisSize={78}
           xRange={requestedXRange}
         />
         <ChartCard
