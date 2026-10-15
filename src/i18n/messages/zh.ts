@@ -49,7 +49,7 @@ export const zh = {
   "home.siteNameLabel": "站点名称",
   "home.defaultSiteName": "节点概览",
   "home.overviewLabel": "首页总览",
-  "home.onlineNodes": "在线节点",
+  "home.onlineNodes": "在线服务器",
   "home.liveBandwidth": "实时带宽",
   "home.totalTraffic": "累计流量",
   "home.assets": "资产概览",
