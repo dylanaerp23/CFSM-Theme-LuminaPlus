@@ -156,7 +156,7 @@ jobs:
           echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       # 正式版（dist）发一条 GitHub Release，方便别人 Watch → Releases 订阅更新（issue #6 有人要）。
-      # 标签打在产物提交上，所以 tree/v<版本号> 就是那一版的主题文件；正文取 CHANGELOG 里这一版的整段。
+      # 标签打在产物提交上，所以 tree/v<版本号> 就是那一版的主题文件。
       # 标题只写版本号（站长 2026-10-15：仓库首页右侧 Releases 栏带上更新日志会被截断），更新日志第一行放进正文开头。
       # 同一版本号的标签已经在了就跳过（同一版本号推两次 main 时不会覆盖已发的 Release）。
       # 只是通知，不影响任何人的主题怎么更新；这一步失败也不影响上面已经发布好的产物。
@@ -179,20 +179,36 @@ jobs:
             found && NF { print; exit }
           ' CHANGELOG.md)"
           notes="${RUNNER_TEMP}/release-notes.md"
+          # 正文只列这一版每条的加粗标题（带上 issue 号），细节留在 CHANGELOG（站长 2026-10-15：整段贴进来太长）。
+          brief="$(awk -v want="## ${version}" '
+            $0 == want { found = 1; next }
+            found && /^## / { exit }
+            found && /^- \*\*/ {
+              line = $0
+              sub(/^- \*\*/, "", line)
+              end = index(line, "**")
+              if (end == 0) next
+              head = substr(line, 1, end - 1)
+              rest = substr(line, end + 2)
+              ref = ""
+              if (index(rest, "（") == 1) {
+                close_at = index(rest, "）")
+                paren = close_at > 0 ? substr(rest, 1, close_at) : ""
+                if (match(paren, /#[0-9]+/)) ref = "（" substr(paren, RSTART, RLENGTH) "）"
+              }
+              print "- " head ref
+            }
+          ' CHANGELOG.md)"
           {
             if [ -n "${title:-}" ]; then
               echo "${title}"
               echo
             fi
-            # 这一段去掉第一行（上面已经单独写了）和它前面的空行。
-            awk -v want="## ${version}" '
-              $0 == want { found = 1; next }
-              found && /^## / { exit }
-              found && !titled { if (NF) titled = 1; next }
-              found { print }
-            ' CHANGELOG.md
-            echo
-            echo "---"
+            if [ -n "${brief}" ]; then
+              echo "${brief}"
+              echo
+            fi
+            echo "完整说明见 [CHANGELOG](https://github.com/${GITHUB_REPOSITORY}/blob/main/CHANGELOG.md)。"
             echo
             echo "锁定这一版的主题地址：\`https://github.com/${GITHUB_REPOSITORY}/tree/${DIST_COMMIT}\`"
           } > "${notes}"
