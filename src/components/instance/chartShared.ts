@@ -27,18 +27,9 @@ export function chartAlpha(color: string, alpha: number): string {
   return rgb ? `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})` : color;
 }
 
-/** 同一色相的浅一档：同一张图里的次要线（Swap 以外的第二、三条）用它，一张图只占一个色相。 */
-export function chartTint(color: string, weight: number): string {
-  const rgb = parseRgb(color);
-  if (!rgb) return color;
-  const w = Math.max(0, Math.min(1, weight));
-  const mix = (v: number) => Math.round(v * w + 255 * (1 - w));
-  return `rgb(${mix(rgb[0])}, ${mix(rgb[1])}, ${mix(rgb[2])})`;
-}
-
 /**
- * 色相转一个角度、饱和度和亮度不变。同一张图里三条线（负载 1 / 5 / 15 分钟）用浅一档分不开
- * （站长 2026-10-15 截图），改成从主色转出邻近色相；跟着主色转，访客在配色面板改了主色也不会撞色。
+ * 色相转一个角度、饱和度和亮度不变。同一张图里的几条线原来用浅一档，分不开
+ * （站长 2026-10-15 截图负载三条线），改成从主色转出别的色相；跟着主色转，访客在配色面板改了主色也不会撞色。
  */
 export function chartHueShift(color: string, degrees: number): string {
   const rgb = parseRgb(color);
