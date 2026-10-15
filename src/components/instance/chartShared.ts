@@ -12,6 +12,30 @@ export const CHART_PALETTE = {
   warning: "#d4a54a",
 } as const;
 
+function parseRgb(color: string): [number, number, number] | null {
+  const value = color.trim();
+  const hex = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(value);
+  if (hex) return [parseInt(hex[1], 16), parseInt(hex[2], 16), parseInt(hex[3], 16)];
+  const rgb = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/i.exec(value);
+  if (rgb) return [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])];
+  return null;
+}
+
+/** 给图表线色加透明度（填充用）。颜色可能来自 CSS 变量（hex 或 rgb()），不能再拼 `${hex}22`。 */
+export function chartAlpha(color: string, alpha: number): string {
+  const rgb = parseRgb(color);
+  return rgb ? `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})` : color;
+}
+
+/** 同一色相的浅一档：同一张图里的次要线（Swap 以外的第二、三条）用它，一张图只占一个色相。 */
+export function chartTint(color: string, weight: number): string {
+  const rgb = parseRgb(color);
+  if (!rgb) return color;
+  const w = Math.max(0, Math.min(1, weight));
+  const mix = (v: number) => Math.round(v * w + 255 * (1 - w));
+  return `rgb(${mix(rgb[0])}, ${mix(rgb[1])}, ${mix(rgb[2])})`;
+}
+
 // 备用定性色板（仅缺少总数时用）；正常走下面的 OKLCH 生成。
 const CHART_SERIES_COLORS = [
   "#4878d0", // 蓝

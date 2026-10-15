@@ -19,7 +19,8 @@ import { InstancePanel, InstanceChartLoading } from "./InstancePanel";
 import {
   buildChartTooltipHooks,
   SPARSE_SERIES_POINTS,
-  CHART_PALETTE,
+  chartAlpha,
+  chartTint,
   createTimeAxisFormatter,
   formatChartCoverageTime,
   getAxisColors,
@@ -40,6 +41,8 @@ import { formatByteRateLabel, formatBytes, formatTrafficRateLabel } from "@/util
 import { historyChartRangeSeconds, historyCoverageLabel } from "@/utils/historyRange";
 import { resolveLoadRecordTotals } from "@/utils/loadMetrics";
 import { usePreferences } from "@/hooks/usePreferences";
+import { useMetricColorsVersion } from "@/hooks/useMetricColors";
+import { safeCanvasColor } from "@/components/node/CanvasStrip";
 import type { LoadRecord, NodeMetrics } from "@/types/cfsm";
 
 const LOAD_HISTORY_SAMPLE_LIMIT = 360;
@@ -75,21 +78,37 @@ const RESUME_REFETCH_HIDDEN_MS = 30_000;
 const STALE_TAIL_REFETCH_MS = 5 * 60_000;
 
 const CPU_KEYS = ["cpu"];
-const CPU_COLORS = [CHART_PALETTE.cpu];
 const MEMORY_KEYS = ["ram", "swap"];
-const MEMORY_COLORS = [CHART_PALETTE.memory, CHART_PALETTE.warning];
 const DISK_KEYS = ["disk"];
-const DISK_COLORS = [CHART_PALETTE.disk];
 const DISK_IO_KEYS = ["diskRead", "diskWrite"];
-const DISK_IO_COLORS = [CHART_PALETTE.memory, CHART_PALETTE.warning];
 const NETWORK_KEYS = ["netIn", "netOut"];
-const NETWORK_COLORS = [CHART_PALETTE.success, CHART_PALETTE.cpu];
 const CONNECTION_KEYS = ["connections", "udp"];
-const CONNECTION_COLORS = [CHART_PALETTE.memory, CHART_PALETTE.cpu];
 const LOAD_KEYS = ["load1", "load5", "load15"];
-const LOAD_COLORS = [CHART_PALETTE.success, CHART_PALETTE.cpu, CHART_PALETTE.memory];
 const PROCESS_KEYS = ["process"];
-const PROCESS_COLORS = [CHART_PALETTE.warning];
+// 每张图一个色相。首页卡片上有的指标读同一个 CSS 变量（访客在配色面板里改了，这里跟着变）；
+// 首页没有的三张（磁盘 IO、连接数、进程）用固定色，避开已经用掉的色相。同一张图里的次要线用同色相的浅一档，
+// 只有内存（Swap）和网络（上 / 下行）沿用首页卡片上的两种颜色。
+const EXTRA_CHART_COLORS = {
+  light: { diskIo: "#c9952b", connections: "#0f9d8f", process: "#64748b" },
+  dark: { diskIo: "#daaa3f", connections: "#2bb5a5", process: "#94a3b8" },
+} as const;
+
+function resolveLoadChartColors(appearance: "light" | "dark") {
+  const read = (name: string) => safeCanvasColor(`var(${name})`);
+  const extra = EXTRA_CHART_COLORS[appearance];
+  const load = read("--progress-load");
+  return {
+    cpu: [read("--progress-cpu")],
+    memory: [read("--progress-memory"), read("--progress-swap")],
+    network: [read("--traffic-down"), read("--traffic-up")],
+    load: [load, chartTint(load, 0.62), chartTint(load, 0.38)],
+    disk: [read("--progress-disk")],
+    diskIo: [extra.diskIo, chartTint(extra.diskIo, 0.5)],
+    connections: [extra.connections, chartTint(extra.connections, 0.5)],
+    process: [extra.process],
+  };
+}
+
 const SERIES_LABEL_KEYS: Record<string, MessageKey> = {
   ram: "chart.series.ram",
   disk: "metric.disk",
@@ -337,7 +356,7 @@ function buildBaseOptions({
         stroke: colors[index] ?? colors[0],
         // 默认只给第一条线填充；两条线地位对等时(磁盘读/写)全填，否则恰好为 0 的那条
         // 会独占填充色，看起来像它才是主角。
-        fill: fillAllSeries || index === 0 ? `${colors[index] ?? colors[0]}22` : undefined,
+        fill: fillAllSeries || index === 0 ? chartAlpha(colors[index] ?? colors[0], 0.13) : undefined,
         width: 1.6,
         paths: SPLINE_PATHS,
         spanGaps: spanGaps ?? false,
@@ -520,6 +539,13 @@ export function LoadChart({
   const node = useNodeMetrics(uuid, active);
   const meta = useNodeMeta(uuid);
   const { resolvedAppearance } = usePreferences();
+  const metricColorsVersion = useMetricColorsVersion();
+  const chartColors = useMemo(
+    () => resolveLoadChartColors(resolvedAppearance),
+    // 配色面板改色时版本号变，要重新读 CSS 变量（函数里没用到它，lint 看不出这层依赖）。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [resolvedAppearance, metricColorsVersion],
+  );
   const [realtimePoints, setRealtimePoints] = useState<ChartPoint[]>([]);
   /** 上一条实时样本的到达时刻，用来发现「断了一段」。 */
   const lastSampleAtRef = useRef(0);
@@ -773,7 +799,7 @@ export function LoadChart({
           note={t("chart.cpuNote")}
           points={points}
           keys={CPU_KEYS}
-          colors={CPU_COLORS}
+          colors={chartColors.cpu}
           resolvedAppearance={resolvedAppearance}
           rangeHours={hours}
           unit="%"
@@ -803,12 +829,38 @@ export function LoadChart({
           }
           points={points}
           keys={MEMORY_KEYS}
-          colors={MEMORY_COLORS}
+          colors={chartColors.memory}
           resolvedAppearance={resolvedAppearance}
           rangeHours={hours}
           unit="%"
           spanGaps={connectNulls}
           axisKind="percent"
+          xRange={requestedXRange}
+        />
+        <ChartCard
+          icon={<Network size={13} />}
+          title={t("chart.network")}
+          uuid={uuid}
+          value={
+            node
+              ? `${formatTrafficRateLabel(node.netDown)} / ${formatTrafficRateLabel(node.netUp)}`
+              : latestHistoryRecord
+                ? `${formatTrafficRateLabel(latestHistoryRecord.net_in ?? 0)} / ${formatTrafficRateLabel(latestHistoryRecord.net_out ?? 0)}`
+                : "—"
+          }
+          note={
+            <span className="instance-overview-multi">
+              <span className="inline-flex items-center gap-1"><ArrowDown size={11} />{node ? formatBytes(node.trafficDown) : latestHistoryRecord ? formatBytes(latestHistoryRecord.net_total_down ?? 0) : "—"}</span>
+              <span className="inline-flex items-center gap-1"><ArrowUp size={11} />{node ? formatBytes(node.trafficUp) : latestHistoryRecord ? formatBytes(latestHistoryRecord.net_total_up ?? 0) : "—"}</span>
+            </span>
+          }
+          points={points}
+          keys={NETWORK_KEYS}
+          colors={chartColors.network}
+          resolvedAppearance={resolvedAppearance}
+          rangeHours={hours}
+          spanGaps={connectNulls}
+          axisKind="network"
           xRange={requestedXRange}
         />
         <ChartCard
@@ -830,7 +882,7 @@ export function LoadChart({
           }
           points={points}
           keys={LOAD_KEYS}
-          colors={LOAD_COLORS}
+          colors={chartColors.load}
           resolvedAppearance={resolvedAppearance}
           rangeHours={hours}
           spanGaps={connectNulls}
@@ -845,7 +897,7 @@ export function LoadChart({
           note={t("chart.diskUsedSpace")}
           points={points}
           keys={DISK_KEYS}
-          colors={DISK_COLORS}
+          colors={chartColors.disk}
           resolvedAppearance={resolvedAppearance}
           rangeHours={hours}
           unit="%"
@@ -870,42 +922,15 @@ export function LoadChart({
             note={t("chart.diskIoNote")}
             points={points}
             keys={DISK_IO_KEYS}
-            colors={DISK_IO_COLORS}
+            colors={chartColors.diskIo}
             resolvedAppearance={resolvedAppearance}
             rangeHours={hours}
             spanGaps={connectNulls}
             axisKind="byteRate"
             xRange={requestedXRange}
             fillAllSeries
-            accent={CHART_PALETTE.disk}
           />
         )}
-        <ChartCard
-          icon={<Network size={13} />}
-          title={t("chart.network")}
-          uuid={uuid}
-          value={
-            node
-              ? `${formatTrafficRateLabel(node.netDown)} / ${formatTrafficRateLabel(node.netUp)}`
-              : latestHistoryRecord
-                ? `${formatTrafficRateLabel(latestHistoryRecord.net_in ?? 0)} / ${formatTrafficRateLabel(latestHistoryRecord.net_out ?? 0)}`
-                : "—"
-          }
-          note={
-            <span className="instance-overview-multi">
-              <span className="inline-flex items-center gap-1"><ArrowDown size={11} />{node ? formatBytes(node.trafficDown) : latestHistoryRecord ? formatBytes(latestHistoryRecord.net_total_down ?? 0) : "—"}</span>
-              <span className="inline-flex items-center gap-1"><ArrowUp size={11} />{node ? formatBytes(node.trafficUp) : latestHistoryRecord ? formatBytes(latestHistoryRecord.net_total_up ?? 0) : "—"}</span>
-            </span>
-          }
-          points={points}
-          keys={NETWORK_KEYS}
-          colors={NETWORK_COLORS}
-          resolvedAppearance={resolvedAppearance}
-          rangeHours={hours}
-          spanGaps={connectNulls}
-          axisKind="network"
-          xRange={requestedXRange}
-        />
         <ChartCard
           icon={<Workflow size={13} />}
           title={t("chart.connections")}
@@ -920,7 +945,7 @@ export function LoadChart({
           note={t("chart.connectionsNote")}
           points={points}
           keys={CONNECTION_KEYS}
-          colors={CONNECTION_COLORS}
+          colors={chartColors.connections}
           resolvedAppearance={resolvedAppearance}
           rangeHours={hours}
           spanGaps={connectNulls}
@@ -941,7 +966,7 @@ export function LoadChart({
           note={t("chart.processesNote")}
           points={points}
           keys={PROCESS_KEYS}
-          colors={PROCESS_COLORS}
+          colors={chartColors.process}
           resolvedAppearance={resolvedAppearance}
           rangeHours={hours}
           spanGaps={connectNulls}
