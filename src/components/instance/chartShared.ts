@@ -36,6 +36,31 @@ export function chartTint(color: string, weight: number): string {
   return `rgb(${mix(rgb[0])}, ${mix(rgb[1])}, ${mix(rgb[2])})`;
 }
 
+/**
+ * 色相转一个角度、饱和度和亮度不变。同一张图里三条线（负载 1 / 5 / 15 分钟）用浅一档分不开
+ * （站长 2026-10-15 截图），改成从主色转出邻近色相；跟着主色转，访客在配色面板改了主色也不会撞色。
+ */
+export function chartHueShift(color: string, degrees: number): string {
+  const rgb = parseRgb(color);
+  if (!rgb) return color;
+  const [r, g, b] = rgb.map((v) => v / 255);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const d = max - min;
+  if (d === 0) return color;
+  const s = d / (1 - Math.abs(2 * l - 1));
+  let h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  h = (h * 60 + degrees + 360 * 2) % 360;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  const [r1, g1, b1] =
+    h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+  const to = (v: number) => Math.round((v + m) * 255);
+  return `rgb(${to(r1)}, ${to(g1)}, ${to(b1)})`;
+}
+
 // 备用定性色板（仅缺少总数时用）；正常走下面的 OKLCH 生成。
 const CHART_SERIES_COLORS = [
   "#4878d0", // 蓝

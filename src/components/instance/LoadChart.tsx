@@ -20,6 +20,7 @@ import {
   buildChartTooltipHooks,
   SPARSE_SERIES_POINTS,
   chartAlpha,
+  chartHueShift,
   chartTint,
   createTimeAxisFormatter,
   formatChartCoverageTime,
@@ -86,8 +87,8 @@ const CONNECTION_KEYS = ["connections", "udp"];
 const LOAD_KEYS = ["load1", "load5", "load15"];
 const PROCESS_KEYS = ["process"];
 // 每张图一个色相。首页卡片上有的指标读同一个 CSS 变量（访客在配色面板里改了，这里跟着变）；
-// 首页没有的三张（磁盘 IO、连接数、进程）用固定色，避开已经用掉的色相。同一张图里的次要线用同色相的浅一档，
-// 只有内存（Swap）和网络（上 / 下行）沿用首页卡片上的两种颜色。
+// 首页没有的三张（磁盘 IO、连接数、进程）用固定色，避开已经用掉的色相。两条线的图里次要线用同色相的浅一档；
+// 负载三条线浅一档分不开，从主色转出两个邻近色相；内存（Swap）和网络（上 / 下行）沿用首页卡片上的两种颜色。
 const EXTRA_CHART_COLORS = {
   light: { diskIo: "#c9952b", connections: "#0f9d8f", process: "#64748b" },
   dark: { diskIo: "#daaa3f", connections: "#2bb5a5", process: "#94a3b8" },
@@ -101,7 +102,7 @@ function resolveLoadChartColors(appearance: "light" | "dark") {
     cpu: [read("--progress-cpu")],
     memory: [read("--progress-memory"), read("--progress-swap")],
     network: [read("--traffic-down"), read("--traffic-up")],
-    load: [load, chartTint(load, 0.62), chartTint(load, 0.38)],
+    load: [load, chartHueShift(load, 55), chartHueShift(load, -75)],
     disk: [read("--progress-disk")],
     diskIo: [extra.diskIo, chartTint(extra.diskIo, 0.5)],
     connections: [extra.connections, chartTint(extra.connections, 0.5)],
