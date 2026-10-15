@@ -1829,40 +1829,22 @@ body::after {
   position: relative;
   min-width: 0;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--border-subtle) 88%, var(--chart-accent, var(--progress-cpu)) 12%);
+  /* 八张图同一个底色和描边（站长 2026-10-15）；各图的颜色只留在图标和线条上。 */
+  border: 1px solid var(--border-subtle);
   border-radius: 16px;
   padding: 11px 12px;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--chart-accent, var(--progress-cpu)) 4%, var(--surface-elev) 96%) 0%,
-      color-mix(in srgb, var(--surface-elev) 94%, transparent) 100%
-    );
+  background: var(--surface-elev);
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, white 10%, transparent),
     0 12px 28px -24px rgba(0, 0, 0, 0.45);
   transition:
     border-color 160ms ease,
-    background 160ms ease,
     transform 160ms ease;
-}
-
-.instance-chart-card::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto;
-  height: 2px;
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--chart-accent, var(--progress-cpu)) 86%, transparent),
-    transparent
-  );
-  opacity: 0.75;
 }
 
 .instance-chart-card:hover {
   transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--border-strong) 70%, var(--chart-accent, var(--progress-cpu)) 30%);
+  border-color: var(--border-strong);
 }
 
 .instance-chart-card-head {
@@ -1870,12 +1852,46 @@ body::after {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  min-height: 38px;
+  /* 同一行几张图的绘图区要对齐：标题 + 图例、数值 + 说明、网络那张带箭头图标的说明，最高的是 42。 */
+  min-height: 42px;
   margin-bottom: 6px;
 }
 
 .instance-chart-card .instance-panel-subhead svg {
   color: var(--chart-accent, var(--progress-cpu));
+}
+
+.instance-chart-card-title {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.instance-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.instance-chart-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.instance-chart-legend-swatch {
+  width: 10px;
+  height: 3px;
+  flex: 0 0 auto;
+  border-radius: 2px;
 }
 
 .instance-uplot-wrap {

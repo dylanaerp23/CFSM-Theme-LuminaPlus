@@ -27,11 +27,9 @@ describe("quick controls expanded state", () => {
     expect(readQuickControlsExpanded()).toBe(false);
   });
 
-  it("always starts collapsed on narrow screens, where the expanded bar covers the site name", () => {
+  it("remembers the state on narrow screens too", () => {
     writeQuickControlsExpanded(true);
-    setWidth(1023);
-    expect(readQuickControlsExpanded()).toBe(false);
-    setWidth(1024);
+    setWidth(375);
     expect(readQuickControlsExpanded()).toBe(true);
   });
 

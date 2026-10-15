@@ -20,7 +20,6 @@ import {
   buildChartTooltipHooks,
   SPARSE_SERIES_POINTS,
   chartAlpha,
-  chartHueShift,
   createTimeAxisFormatter,
   formatChartCoverageTime,
   getAxisColors,
@@ -85,28 +84,28 @@ const NETWORK_KEYS = ["netIn", "netOut"];
 const CONNECTION_KEYS = ["connections", "udp"];
 const LOAD_KEYS = ["load1", "load5", "load15"];
 const PROCESS_KEYS = ["process"];
-// 每张图一个色相。首页卡片上有的指标读同一个 CSS 变量（访客在配色面板里改了，这里跟着变）；
-// 首页没有的三张（磁盘 IO、连接数、进程）用固定色，避开已经用掉的色相。同一张图里的其余线从主色转出别的色相
-// （浅一档分不开，站长 2026-10-15 指出负载三条线；按 OKLab 色差量过，浅色 / 深色每对都在 0.19 以上，原来最近的一对只有 0.06）；
-// 内存（Swap）和网络（上 / 下行）沿用配色面板里的两种颜色。
-const EXTRA_CHART_COLORS = {
-  light: { diskIo: "#c9952b", connections: "#0f9d8f", process: "#64748b" },
-  dark: { diskIo: "#daaa3f", connections: "#2bb5a5", process: "#94a3b8" },
+// 线条配色的规矩（站长 2026-10-15 嫌转色相出来的颜色不好看、而且不悬停分不清哪条是哪条）：
+// 每张图的主线用那张图自己的颜色，首页卡片上有的指标读同一个 CSS 变量（配色面板改了这里跟着变）；
+// 第二条线一律琥珀色、第三条（只有负载）天蓝，整页同一个角色同一个颜色，配合标题下的图例看。
+// 网络例外，下行 / 上行沿用首页的两种颜色。按 OKLab 色差量过，浅色 / 深色每对都在 0.2 以上。
+const FIXED_CHART_COLORS = {
+  light: { second: "#f59e0b", third: "#0ea5e9", diskIo: "#0ea5e9", connections: "#14b8a6", process: "#6366f1" },
+  dark: { second: "#fbbf24", third: "#38bdf8", diskIo: "#38bdf8", connections: "#2dd4bf", process: "#818cf8" },
 } as const;
 
 function resolveLoadChartColors(appearance: "light" | "dark") {
   const read = (name: string) => safeCanvasColor(`var(${name})`);
-  const extra = EXTRA_CHART_COLORS[appearance];
-  const load = read("--progress-load");
+  const fixed = FIXED_CHART_COLORS[appearance];
   return {
     cpu: [read("--progress-cpu")],
+    // Swap 色的默认值就是琥珀（tokens.css），仍读变量，配色面板里单独改过的照用。
     memory: [read("--progress-memory"), read("--progress-swap")],
     network: [read("--traffic-down"), read("--traffic-up")],
-    load: [load, chartHueShift(load, 70), chartHueShift(load, -90)],
+    load: [read("--progress-load"), fixed.second, fixed.third],
     disk: [read("--progress-disk")],
-    diskIo: [extra.diskIo, chartHueShift(extra.diskIo, -55)],
-    connections: [extra.connections, chartHueShift(extra.connections, 40)],
-    process: [extra.process],
+    diskIo: [fixed.diskIo, fixed.second],
+    connections: [fixed.connections, fixed.second],
+    process: [fixed.process],
   };
 }
 
@@ -500,9 +499,26 @@ const ChartCard = memo(function ChartCard({
       style={{ "--chart-accent": accent ?? colors[0] } as CSSProperties}
     >
       <header className="instance-chart-card-head">
-        <div className="instance-panel-subhead">
-          {icon}
-          <span>{title}</span>
+        <div className="instance-chart-card-title">
+          <div className="instance-panel-subhead">
+            {icon}
+            <span>{title}</span>
+          </div>
+          {/* 多条线的图常驻图例，不悬停也知道哪条是哪条（站长 2026-10-15）。 */}
+          {keys.length > 1 && (
+            <ul className="instance-chart-legend">
+              {keys.map((key, index) => (
+                <li key={key}>
+                  <span
+                    className="instance-chart-legend-swatch"
+                    style={{ background: colors[index] ?? colors[0] }}
+                    aria-hidden
+                  />
+                  {getSeriesLabel(key)}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <div className="instance-series-stats">
           <span className="tabular">{value}</span>
@@ -876,11 +892,7 @@ export function LoadChart({
                 : "—"
           }
           // 核心数是看负载高不高的参照（负载持续超过核心数 = 有进程在排队）。
-          note={
-            meta?.cpu_cores
-              ? `${t("chart.loadNote")} · ${t("metric.cpuCores", { n: meta.cpu_cores })}`
-              : t("chart.loadNote")
-          }
+          note={meta?.cpu_cores ? t("metric.cpuCores", { n: meta.cpu_cores }) : undefined}
           points={points}
           keys={LOAD_KEYS}
           colors={chartColors.load}
@@ -920,7 +932,6 @@ export function LoadChart({
                   })
                 : "—"
             }
-            note={t("chart.diskIoNote")}
             points={points}
             keys={DISK_IO_KEYS}
             colors={chartColors.diskIo}
@@ -943,7 +954,6 @@ export function LoadChart({
                 ? `TCP ${Math.round(latestHistoryRecord.connections ?? 0)} / UDP ${Math.round(latestHistoryRecord.connections_udp ?? 0)}`
                 : "—"
           }
-          note={t("chart.connectionsNote")}
           points={points}
           keys={CONNECTION_KEYS}
           colors={chartColors.connections}
