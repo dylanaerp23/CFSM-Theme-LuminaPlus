@@ -112,6 +112,7 @@ jobs:
       # 用户也可能把主题地址锁在 40 位 SHA 上。一旦 force-push 覆盖，这些旧地址就会失效，
       # 所以这里是在已有分支上追加提交，不重建、不强推。
       - name: Publish build
+        id: publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TARGET_BRANCH: ${{ steps.target.outputs.branch }}
@@ -140,6 +141,7 @@ jobs:
           if git diff --cached --quiet; then
             if [ "${FORCE_PUBLISH}" != "true" ]; then
               echo "产物与上次一致，跳过发布：$(git rev-parse HEAD)"
+              echo "published=false" >> "$GITHUB_OUTPUT"
               exit 0
             fi
             # 只想给商店补一条更新日志时，用同样的产物再发一版。
@@ -150,3 +152,48 @@ jobs:
           git push -q origin "HEAD:${TARGET_BRANCH}"
           echo "已发布到 ${TARGET_BRANCH} 分支：${GITHUB_SHA::7}"
           echo "产物 commit（可用于主题商店 versions[].commitid）：$(git rev-parse HEAD)"
+          echo "published=true" >> "$GITHUB_OUTPUT"
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      # 正式版（dist）发一条 GitHub Release，方便别人 Watch → Releases 订阅更新（issue #6 有人要）。
+      # 标签打在产物提交上，所以 tree/v<版本号> 就是那一版的主题文件；正文取 CHANGELOG 里这一版的整段。
+      # 同一版本号的标签已经在了就跳过（同一版本号推两次 main 时不会覆盖已发的 Release）。
+      # 只是通知，不影响任何人的主题怎么更新；这一步失败也不影响上面已经发布好的产物。
+      - name: Create GitHub Release
+        if: steps.target.outputs.branch == 'dist' && steps.publish.outputs.published == 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DIST_COMMIT: ${{ steps.publish.outputs.commit }}
+        run: |
+          set -euo pipefail
+          version="v$(node -p "require('./package.json').version")"
+          if git ls-remote --exit-code --tags origin "refs/tags/${version}" >/dev/null; then
+            echo "标签 ${version} 已存在，不再发 Release"
+            exit 0
+          fi
+          title="$(awk -v want="## ${version}" '
+            $0 == want { found = 1; next }
+            found && /^## / { exit }
+            found && NF { print; exit }
+          ' CHANGELOG.md)"
+          notes="${RUNNER_TEMP}/release-notes.md"
+          {
+            # 这一段去掉第一行（已经当标题用了）和它前面的空行。
+            awk -v want="## ${version}" '
+              $0 == want { found = 1; next }
+              found && /^## / { exit }
+              found && !titled { if (NF) titled = 1; next }
+              found { print }
+            ' CHANGELOG.md
+            echo
+            echo "---"
+            echo
+            echo "锁定这一版的主题地址：\`https://github.com/${GITHUB_REPOSITORY}/tree/${DIST_COMMIT}\`"
+          } > "${notes}"
+          gh release create "${version}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --target "${DIST_COMMIT}" \
+            --title "${version} ${title:-}" \
+            --notes-file "${notes}"
+          echo "已发 Release ${version}（标签指向产物 ${DIST_COMMIT::7}）"

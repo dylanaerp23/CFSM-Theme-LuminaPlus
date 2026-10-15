@@ -119,6 +119,8 @@ BACKGROUND_IMAGE=https://example.com/bg.webp
 
 - 发版先改 `package.json` 的 `version`，在 CHANGELOG 加一段 `## v<版本号>`，CI 取该段第一行作为产物提交的说明，
   也就是主题商店里的更新日志（格式 `v<版本号> <更新日志>`）。只想补一条日志时，手动运行 workflow 并勾上 `force`。
+- 推 `main` 发布成功后，CI 给这一版的产物提交打上 `v<版本号>` 标签并发一条 GitHub Release（正文是 CHANGELOG 里这一段）。
+  想收到更新通知，在仓库页面 Watch → Custom → 勾 Releases。Release 只是通知，主题怎么更新不受影响。
 - 产物分支只追加提交、不强推，锁在旧 SHA 的用户和主题商店里登记的历史版本一直可用。
 - 产物 `index.html` 里写有 `<meta name="theme-version">`，排查缓存时看它。
 
