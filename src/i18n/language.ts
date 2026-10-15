@@ -19,15 +19,40 @@ function browserLanguages(): readonly string[] {
 }
 
 /**
- * 后台「默认语言」换算成界面语言。`zh` / `en` / `es` 直接用；`auto`（或缺省、认不出的值）按访客浏览器的语言挑：
- * 浏览器首选里先出现西语就西语、先出现中文就中文，都没有用英文 —— 和后端内置主题（`src/frontend/utils/i18n.js`）同一口径。
+ * 后端自带前端（内置主题和后台页面顶上的 EN / 中 / ES 切换）把访客选的语言存在这个键里，同一个站点下本主题读得到。
+ * 见后端 `src/frontend/utils/constants.js` 的 `STORAGE.LANGUAGE_PREFERENCE`。
+ */
+const BACKEND_LANGUAGE_STORAGE_KEY = "language_preference";
+
+function asLanguage(value: unknown): Language | null {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  return normalized === "zh" || normalized === "en" || normalized === "es" ? normalized : null;
+}
+
+/** 访客在后端自带前端里亲手选过的语言；没选过（或存的是 auto、读不到）返回 null。 */
+export function readBackendLanguagePreference(): Language | null {
+  try {
+    return asLanguage(window.localStorage.getItem(BACKEND_LANGUAGE_STORAGE_KEY));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 换算界面语言，优先级和后端内置主题（`src/frontend/utils/i18n.js` 的 `applyDefaultLanguage`）一样：
+ * ① 访客在后台 / 内置主题里亲手选过的语言（`visitorChoice`）；② 后台「默认语言」`zh` / `en` / `es`；
+ * ③ `auto`（或缺省、认不出的值）按浏览器：首选里先出现西语就西语、先出现中文就中文，都没有用英文。
+ *
+ * 站长 2026-10-14 在后台顶上点了 EN，内置主题跟着变、本主题没变 —— 原来只看了 ②③。
  */
 export function resolveLanguage(
   defaultLanguage: string | null | undefined,
   languages: readonly string[] = browserLanguages(),
+  visitorChoice: Language | null = null,
 ): Language {
-  const preferred = String(defaultLanguage ?? "").trim().toLowerCase();
-  if (preferred === "zh" || preferred === "en" || preferred === "es") return preferred;
+  if (visitorChoice) return visitorChoice;
+  const preferred = asLanguage(defaultLanguage);
+  if (preferred) return preferred;
   for (const raw of languages) {
     const value = String(raw ?? "").trim().toLowerCase();
     if (value === "es" || value.startsWith("es-")) return "es";
@@ -56,9 +81,25 @@ export function setLanguage(language: Language) {
   listeners.forEach((listener) => listener());
 }
 
-/** 按站点配置的 `default_language` 定界面语言。在解析 `/api/config` 时调用，内容渲染前语言就已经定了，不会先中文再跳。 */
+let siteDefaultLanguage: string | null | undefined = "auto";
+
+/** 按站点配置的 `default_language`（和访客在后台选过的语言）定界面语言。在解析 `/api/config` 时调用，内容渲染前语言就已经定了，不会先中文再跳。 */
 export function applySiteLanguage(defaultLanguage: string | null | undefined) {
-  setLanguage(resolveLanguage(defaultLanguage));
+  siteDefaultLanguage = defaultLanguage;
+  setLanguage(resolveLanguage(defaultLanguage, browserLanguages(), readBackendLanguagePreference()));
+}
+
+/**
+ * 页面启动时调用一次：先按访客选过的语言 / 浏览器语言显示（站点配置到手前的加载圈、出错页、人机验证），
+ * 并跟着别的标签页里的切换走 —— 后台页面开在另一个标签页，点了 EN / 中 / ES，这边立刻换。
+ */
+export function initLanguage() {
+  applySiteLanguage(siteDefaultLanguage);
+  if (typeof window === "undefined") return;
+  window.addEventListener("storage", (event) => {
+    if (event.key !== null && event.key !== BACKEND_LANGUAGE_STORAGE_KEY) return;
+    applySiteLanguage(siteDefaultLanguage);
+  });
 }
 
 export function subscribeLanguage(listener: () => void) {
