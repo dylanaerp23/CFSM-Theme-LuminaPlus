@@ -1,3 +1,4 @@
+import { t, type MessageKey } from "@/i18n";
 import {
   memo,
   useCallback,
@@ -87,18 +88,21 @@ const CONNECTION_KEYS = ["connections", "udp"];
 const CONNECTION_COLORS = [CHART_PALETTE.memory, CHART_PALETTE.cpu];
 const PROCESS_KEYS = ["process"];
 const PROCESS_COLORS = [CHART_PALETTE.warning];
-const SERIES_LABELS: Record<string, string> = {
+const SERIES_LABEL_KEYS: Record<string, MessageKey> = {
+  ram: "chart.series.ram",
+  disk: "metric.disk",
+  diskRead: "chart.series.diskRead",
+  diskWrite: "chart.series.diskWrite",
+  netIn: "traffic.download",
+  netOut: "traffic.upload",
+  process: "chart.series.process",
+};
+// 不用翻译的线名（CPU / Swap / TCP / UDP）。
+const SERIES_LITERAL_LABELS: Record<string, string> = {
   cpu: "CPU",
-  ram: "内存",
   swap: "Swap",
-  disk: "磁盘",
-  diskRead: "读取",
-  diskWrite: "写入",
-  netIn: "下行",
-  netOut: "上行",
   connections: "TCP",
   udp: "UDP",
-  process: "进程",
 };
 const LOAD_INTERPOLATE_KEYS = [
   "cpu",
@@ -161,7 +165,8 @@ function downsamplePoints(points: ChartPoint[], limit: number) {
 }
 
 function getSeriesLabel(key: string) {
-  return SERIES_LABELS[key] ?? key;
+  const labelKey = SERIES_LABEL_KEYS[key];
+  return labelKey ? t(labelKey) : SERIES_LITERAL_LABELS[key] ?? key;
 }
 
 function pointFromNode(node: NodeMetrics): ChartPoint {
@@ -638,10 +643,10 @@ export function LoadChart({
   const sourceRecordCount = historyRecords.length;
   const wasDownsampled = !isRealtime && sourceRecordCount > getHistoryRenderLimit(hours);
   const sampleSummary = isRealtime
-    ? `${points.length} 个点`
+    ? t("chart.points", { n: points.length })
     : wasDownsampled
-      ? `${points.length} / ${sourceRecordCount} 个点`
-      : `${points.length} 个点`;
+      ? t("chart.pointsOf", { n: points.length, total: sourceRecordCount })
+      : t("chart.points", { n: points.length });
   const coverageSummary = points.length
     ? `${formatChartCoverageTime(points[0].time)} - ${formatChartCoverageTime(points[points.length - 1].time)}`
     : "—";
@@ -664,14 +669,14 @@ export function LoadChart({
   );
 
   if (isLoading) {
-    return <InstanceChartLoading title="负载图表" />;
+    return <InstanceChartLoading title={t("chart.loadTitle")} />;
   }
 
   if (isError && !points.length) {
     return (
-      <InstancePanel title="负载图表">
+      <InstancePanel title={t("chart.loadTitle")}>
         <div className="instance-empty">
-          <span>负载历史加载失败</span>
+          <span>{t("chart.loadFailed")}</span>
           <button
             type="button"
             className="instance-toggle-button"
@@ -679,7 +684,7 @@ export function LoadChart({
             disabled={isFetching}
             aria-busy={isFetching}
           >
-            {isFetching ? "重试中" : "重试"}
+            {isFetching ? t("common.retrying") : t("common.retry")}
           </button>
         </div>
       </InstancePanel>
@@ -688,9 +693,9 @@ export function LoadChart({
 
   if (!points.length) {
     return (
-      <InstancePanel title="负载图表">
+      <InstancePanel title={t("chart.loadTitle")}>
         <div className="instance-empty">
-          <span>暂无负载历史数据</span>
+          <span>{t("chart.loadEmpty")}</span>
           <button
             type="button"
             className="instance-toggle-button"
@@ -699,7 +704,7 @@ export function LoadChart({
             aria-busy={isFetching}
           >
             <RefreshCw size={14} aria-hidden />
-            {isFetching ? "刷新中" : "刷新"}
+            {isFetching ? t("common.refreshing") : t("common.refresh")}
           </button>
         </div>
       </InstancePanel>
@@ -708,19 +713,19 @@ export function LoadChart({
 
   return (
     <InstancePanel
-      title="负载图表"
+      title={t("chart.loadTitle")}
       aside={
         <div className="instance-chart-headmeta">
-          <div className="instance-chart-meta" aria-label="图表数据范围">
+          <div className="instance-chart-meta" aria-label={t("chart.rangeLabel")}>
             <span title={coverageSummary}>
-              <strong>{coverageLabel ?? `覆盖 ${coverageSummary}`}</strong>
+              <strong>{coverageLabel ?? t("chart.coverage", { range: coverageSummary })}</strong>
             </span>
             <span>
-              采样 <strong>{sampleSummary}</strong>
+              {t("chart.samples")} <strong>{sampleSummary}</strong>
             </span>
           </div>
           <SwitchToggle
-            label="断点连线"
+            label={t("chart.connectGaps")}
             active={connectNulls}
             onToggle={() => setConnectNulls((value) => !value)}
           />
@@ -732,7 +737,7 @@ export function LoadChart({
             aria-busy={isFetching}
           >
             <RefreshCw size={14} aria-hidden />
-            {isFetching ? "刷新中" : "刷新"}
+            {isFetching ? t("common.refreshing") : t("common.refresh")}
           </button>
         </div>
       }
@@ -748,7 +753,7 @@ export function LoadChart({
               ? `${node.cpuPct.toFixed(2)}%`
               : `${(points[points.length - 1]?.cpu ?? 0).toFixed(2)}%`
           }
-          note="使用率"
+          note={t("chart.cpuNote")}
           points={points}
           keys={CPU_KEYS}
           colors={CPU_COLORS}
@@ -761,7 +766,7 @@ export function LoadChart({
         />
         <ChartCard
           icon={<MemoryStick size={13} />}
-          title="内存"
+          title={t("metric.memory")}
           uuid={uuid}
           value={
             node
@@ -774,10 +779,10 @@ export function LoadChart({
             node
               ? node.swapTotal
                 ? `Swap ${formatBytes(node.swapUsed)} / ${formatBytes(node.swapTotal)}`
-                : "Swap 无"
+                : t("chart.swapNone")
               : latestHistoryRecord && latestHistoryTotals && latestHistoryTotals.swapTotal > 0
                 ? `Swap ${formatBytes(latestHistoryRecord.swap)} / ${formatBytes(latestHistoryTotals.swapTotal)}`
-                : "Swap 无"
+                : t("chart.swapNone")
           }
           points={points}
           keys={MEMORY_KEYS}
@@ -794,14 +799,21 @@ export function LoadChart({
         {hasDiskIo ? (
           <ChartCard
             icon={<HardDrive size={13} />}
-            title="磁盘 IO"
+            title={t("chart.diskIo")}
             uuid={uuid}
             value={
               latestDiskIo
-                ? `读 ${formatByteRateLabel(latestDiskIo.read)} · 写 ${formatByteRateLabel(latestDiskIo.write)}`
+                ? t("chart.diskIoValue", {
+                    read: formatByteRateLabel(latestDiskIo.read),
+                    write: formatByteRateLabel(latestDiskIo.write),
+                  })
                 : "—"
             }
-            note={diskUsageLabel === "—" ? "已用空间 —" : `已用 ${diskUsageLabel}`}
+            note={
+              diskUsageLabel === "—"
+                ? t("chart.diskUsedNone")
+                : t("chart.diskUsed", { value: diskUsageLabel })
+            }
             points={points}
             keys={DISK_IO_KEYS}
             colors={DISK_IO_COLORS}
@@ -816,10 +828,10 @@ export function LoadChart({
         ) : (
           <ChartCard
             icon={<HardDrive size={13} />}
-            title="磁盘"
+            title={t("metric.disk")}
             uuid={uuid}
             value={diskUsageLabel}
-            note="已用空间"
+            note={t("chart.diskUsedSpace")}
             points={points}
             keys={DISK_KEYS}
             colors={DISK_COLORS}
@@ -833,7 +845,7 @@ export function LoadChart({
         )}
         <ChartCard
           icon={<Network size={13} />}
-          title="网络"
+          title={t("chart.network")}
           uuid={uuid}
           value={
             node
@@ -859,7 +871,7 @@ export function LoadChart({
         />
         <ChartCard
           icon={<Workflow size={13} />}
-          title="连接数"
+          title={t("chart.connections")}
           uuid={uuid}
           value={
             node
@@ -868,7 +880,7 @@ export function LoadChart({
                 ? `TCP ${Math.round(latestHistoryRecord.connections ?? 0)} / UDP ${Math.round(latestHistoryRecord.connections_udp ?? 0)}`
                 : "—"
           }
-          note="连接"
+          note={t("chart.connectionsNote")}
           points={points}
           keys={CONNECTION_KEYS}
           colors={CONNECTION_COLORS}
@@ -880,7 +892,7 @@ export function LoadChart({
         />
         <ChartCard
           icon={<Gauge size={13} />}
-          title="进程"
+          title={t("chart.processes")}
           uuid={uuid}
           value={
             node
@@ -891,9 +903,11 @@ export function LoadChart({
           }
           note={
             node
-              ? `负载 ${node.load1.toFixed(2)} | ${node.load5.toFixed(2)} | ${node.load15.toFixed(2)}`
+              ? t("chart.loadNote", {
+                  value: `${node.load1.toFixed(2)} | ${node.load5.toFixed(2)} | ${node.load15.toFixed(2)}`,
+                })
               : latestHistoryRecord
-                ? `负载 ${(latestHistoryRecord.load ?? 0).toFixed(2)}`
+                ? t("chart.loadNote", { value: (latestHistoryRecord.load ?? 0).toFixed(2) })
                 : "—"
           }
           points={points}

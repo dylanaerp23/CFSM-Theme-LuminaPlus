@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type uPlot from "uplot";
 
@@ -75,24 +76,19 @@ interface TimeRangeOption {
 // load 和 ping 共用同一套历史区间预设；唯一区别是是否在前面加 "实时" 选项，这由
 // buildHistoryRangeOptions 的 includeRealtime 标志处理，而非改预设列表本身。
 // 取值必须落在 CF-Server-Monitor `/api/history/all` 支持的档位上（最长 7 天）。
-const TIME_RANGE_OPTIONS: TimeRangeOption[] = [
-  { label: "1 小时", value: 1 },
-  { label: "6 小时", value: 6 },
-  { label: "12 小时", value: 12 },
-  { label: "1 天", value: 24 },
-  { label: "2 天", value: 48 },
-  { label: "7 天", value: 168 },
-];
+const TIME_RANGE_HOURS = [1, 6, 12, 24, 48, 168] as const;
 
-const PING_TIME_RANGE_OPTIONS: TimeRangeOption[] = [...TIME_RANGE_OPTIONS];
+/** 档位名跟界面语言走，每次现算。 */
+function timeRangeOptions(): TimeRangeOption[] {
+  return TIME_RANGE_HOURS.map((value) => ({ label: formatRangeLabel(value), value }));
+}
 
 function formatRangeLabel(hours: number) {
   if (hours % 24 === 0) {
-    const days = hours / 24;
-    return `${days} 天`;
+    return t("duration.days", { n: hours / 24 });
   }
 
-  return `${hours} 小时`;
+  return t("duration.hours", { n: hours });
 }
 
 function buildHistoryRangeOptions(
@@ -100,7 +96,7 @@ function buildHistoryRangeOptions(
   maxHours: number | null | undefined,
   includeRealtime: boolean,
 ) {
-  const options = includeRealtime ? [{ label: "实时", value: 0 }] : [];
+  const options = includeRealtime ? [{ label: t("range.realtime"), value: 0 }] : [];
   if (!Number.isFinite(maxHours) || !maxHours || maxHours <= 0) {
     return [...options, ...presets];
   }
@@ -123,15 +119,15 @@ function buildHistoryRangeOptions(
 }
 
 export function buildLoadTimeRangeOptions(maxHours: number | null | undefined) {
-  return buildHistoryRangeOptions(TIME_RANGE_OPTIONS, maxHours, true);
+  return buildHistoryRangeOptions(timeRangeOptions(), maxHours, true);
 }
 
 export function buildPingTimeRangeOptions(maxHours: number | null | undefined) {
   if (!Number.isFinite(maxHours) || !maxHours || maxHours <= 0) {
-    return [...PING_TIME_RANGE_OPTIONS];
+    return timeRangeOptions();
   }
   const safeMaxHours = Math.floor(maxHours);
-  return PING_TIME_RANGE_OPTIONS.filter((option) => option.value <= safeMaxHours);
+  return timeRangeOptions().filter((option) => option.value <= safeMaxHours);
 }
 
 const GRID_CHART_DEFAULT = { w: 320, h: 132 };
