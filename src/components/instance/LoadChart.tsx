@@ -12,7 +12,7 @@ import {
 } from "react";
 import UplotReact from "uplot-react";
 import uPlot from "uplot";
-import { ArrowDown, ArrowUp, Cpu, Gauge, HardDrive, MemoryStick, Network, RefreshCw, Workflow } from "lucide-react";
+import { ArrowDown, ArrowUp, Cpu, Gauge, HardDrive, Layers, MemoryStick, Network, RefreshCw, Workflow } from "lucide-react";
 import { useLoadRecords } from "@/hooks/useRecords";
 import { useNodeMeta, useNodeMetrics } from "@/hooks/useNode";
 import { InstancePanel, InstanceChartLoading } from "./InstancePanel";
@@ -86,6 +86,8 @@ const NETWORK_KEYS = ["netIn", "netOut"];
 const NETWORK_COLORS = [CHART_PALETTE.success, CHART_PALETTE.cpu];
 const CONNECTION_KEYS = ["connections", "udp"];
 const CONNECTION_COLORS = [CHART_PALETTE.memory, CHART_PALETTE.cpu];
+const LOAD_KEYS = ["load1", "load5", "load15"];
+const LOAD_COLORS = [CHART_PALETTE.success, CHART_PALETTE.cpu, CHART_PALETTE.memory];
 const PROCESS_KEYS = ["process"];
 const PROCESS_COLORS = [CHART_PALETTE.warning];
 const SERIES_LABEL_KEYS: Record<string, MessageKey> = {
@@ -96,6 +98,9 @@ const SERIES_LABEL_KEYS: Record<string, MessageKey> = {
   netIn: "traffic.download",
   netOut: "traffic.upload",
   process: "chart.series.process",
+  load1: "chart.series.load1",
+  load5: "chart.series.load5",
+  load15: "chart.series.load15",
 };
 // 不用翻译的线名（CPU / Swap / TCP / UDP）。
 const SERIES_LITERAL_LABELS: Record<string, string> = {
@@ -116,6 +121,9 @@ const LOAD_INTERPOLATE_KEYS = [
   "connections",
   "udp",
   "process",
+  "load1",
+  "load5",
+  "load15",
 ];
 
 interface ChartPoint {
@@ -145,6 +153,9 @@ const DOWNSAMPLE_KEYS = [
   "connections",
   "udp",
   "process",
+  "load1",
+  "load5",
+  "load15",
 ] as const;
 
 // 走与 Ping 图同一套时间分桶保峰降采样:抽点式降采样会随机丢掉桶内尖峰,
@@ -184,6 +195,9 @@ function pointFromNode(node: NodeMetrics): ChartPoint {
     connections: node.connectionsTcp,
     udp: node.connectionsUdp,
     process: node.process,
+    load1: node.load1,
+    load5: node.load5,
+    load15: node.load15,
   };
 }
 
@@ -583,6 +597,9 @@ export function LoadChart({
         connections: record.connections,
         udp: record.connections_udp,
         process: record.process,
+        load1: record.load,
+        load5: record.load5,
+        load15: record.load15,
       };
     });
     const sampled = downsamplePoints(rawPoints, getHistoryRenderLimit(hours));
@@ -794,9 +811,50 @@ export function LoadChart({
           axisKind="percent"
           xRange={requestedXRange}
         />
-        {/* 磁盘卡片画 IO 速率，已用空间挪到副标题；探针没上报 IO 时整卡退回原来的空间占用图，
-            否则会是一张空图。 */}
-        {hasDiskIo ? (
+        <ChartCard
+          icon={<Gauge size={13} />}
+          title={t("metric.load")}
+          uuid={uuid}
+          value={
+            node
+              ? `${node.load1.toFixed(2)} / ${node.load5.toFixed(2)} / ${node.load15.toFixed(2)}`
+              : latestHistoryRecord
+                ? `${latestHistoryRecord.load.toFixed(2)} / ${latestHistoryRecord.load5.toFixed(2)} / ${latestHistoryRecord.load15.toFixed(2)}`
+                : "—"
+          }
+          // 核心数是看负载高不高的参照（负载持续超过核心数 = 有进程在排队）。
+          note={
+            meta?.cpu_cores
+              ? `${t("chart.loadNote")} · ${t("metric.cpuCores", { n: meta.cpu_cores })}`
+              : t("chart.loadNote")
+          }
+          points={points}
+          keys={LOAD_KEYS}
+          colors={LOAD_COLORS}
+          resolvedAppearance={resolvedAppearance}
+          rangeHours={hours}
+          spanGaps={connectNulls}
+          axisKind="count"
+          xRange={requestedXRange}
+        />
+        <ChartCard
+          icon={<HardDrive size={13} />}
+          title={t("metric.disk")}
+          uuid={uuid}
+          value={diskUsageLabel}
+          note={t("chart.diskUsedSpace")}
+          points={points}
+          keys={DISK_KEYS}
+          colors={DISK_COLORS}
+          resolvedAppearance={resolvedAppearance}
+          rangeHours={hours}
+          unit="%"
+          spanGaps={connectNulls}
+          axisKind="percent"
+          xRange={requestedXRange}
+        />
+        {/* 探针没上报 IO 时不画这张（会是一张空图），只剩上面的空间占用。 */}
+        {hasDiskIo && (
           <ChartCard
             icon={<HardDrive size={13} />}
             title={t("chart.diskIo")}
@@ -809,11 +867,7 @@ export function LoadChart({
                   })
                 : "—"
             }
-            note={
-              diskUsageLabel === "—"
-                ? t("chart.diskUsedNone")
-                : t("chart.diskUsed", { value: diskUsageLabel })
-            }
+            note={t("chart.diskIoNote")}
             points={points}
             keys={DISK_IO_KEYS}
             colors={DISK_IO_COLORS}
@@ -824,23 +878,6 @@ export function LoadChart({
             xRange={requestedXRange}
             fillAllSeries
             accent={CHART_PALETTE.disk}
-          />
-        ) : (
-          <ChartCard
-            icon={<HardDrive size={13} />}
-            title={t("metric.disk")}
-            uuid={uuid}
-            value={diskUsageLabel}
-            note={t("chart.diskUsedSpace")}
-            points={points}
-            keys={DISK_KEYS}
-            colors={DISK_COLORS}
-            resolvedAppearance={resolvedAppearance}
-            rangeHours={hours}
-            unit="%"
-            spanGaps={connectNulls}
-            axisKind="percent"
-            xRange={requestedXRange}
           />
         )}
         <ChartCard
@@ -891,7 +928,7 @@ export function LoadChart({
           xRange={requestedXRange}
         />
         <ChartCard
-          icon={<Gauge size={13} />}
+          icon={<Layers size={13} />}
           title={t("chart.processes")}
           uuid={uuid}
           value={
@@ -901,15 +938,7 @@ export function LoadChart({
                 ? Math.round(latestHistoryRecord.process ?? 0).toString()
                 : "—"
           }
-          note={
-            node
-              ? t("chart.loadNote", {
-                  value: `${node.load1.toFixed(2)} | ${node.load5.toFixed(2)} | ${node.load15.toFixed(2)}`,
-                })
-              : latestHistoryRecord
-                ? t("chart.loadNote", { value: (latestHistoryRecord.load ?? 0).toFixed(2) })
-                : "—"
-          }
+          note={t("chart.processesNote")}
           points={points}
           keys={PROCESS_KEYS}
           colors={PROCESS_COLORS}

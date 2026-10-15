@@ -1814,8 +1814,15 @@ body::after {
 
 .instance-chart-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* 8 张图（有磁盘 IO 时）：宽屏 4 × 2，中等宽度 2 × 4；3 列会剩一行只有两张。 */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+}
+
+@media (min-width: 1280px) {
+  .instance-chart-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .instance-chart-card {

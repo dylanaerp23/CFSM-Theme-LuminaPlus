@@ -40,6 +40,7 @@ import {
   Sparkles,
   Sun,
   SunMoon,
+  ToggleRight,
   Wallpaper,
   X,
 } from "lucide-react";
@@ -294,6 +295,10 @@ function pickManagedThemeSettings(settings: ResolvedThemeSettings) {
     defaultAppearance: settings.defaultAppearance,
     desktopNodeViewMode: settings.desktopNodeViewMode,
     mobileNodeViewMode: settings.mobileNodeViewMode,
+    quickShowAppearance: settings.quickShowAppearance,
+    quickShowViewMode: settings.quickShowViewMode,
+    quickShowColors: settings.quickShowColors,
+    enableAdminButton: settings.enableAdminButton,
     homepagePingBindings: settings.homepagePingBindings,
     homepageDefaultPingTaskId: settings.homepageDefaultPingTaskId,
     enableHomepageMultiPing: settings.enableHomepageMultiPing,
@@ -1318,7 +1323,7 @@ export function ThemeManage() {
     };
   }, [draft]);
 
-  // 只比较本页实际管理的设置。enableAdminButton/showPingChart 这类隐藏设置会通过
+  // 只比较本页实际管理的设置。showPingChart 这类隐藏设置会通过
   // baseSettings 在保存时保留,但不该让表单永远显示为 dirty。
   const draftSignature = useMemo(
     () => managedSettingsSignature(draftThemeSettings as ThemeSettings & Record<string, unknown>),
@@ -1700,6 +1705,45 @@ export function ThemeManage() {
                     </div>
                   </div>
                 </div>
+              </InstancePanel>
+
+              <InstancePanel
+                id="set-quick-controls"
+                kicker={t("settings.kickerQuick")}
+                title={t("settings.quickButtons")}
+                aside={<ToggleRight size={16} />}
+              >
+                <div className="grid gap-3 md:grid-cols-2">
+                  <ToggleRow
+                    field="quickShowAppearance"
+                    title={t("settings.quickAppearance")}
+                    desc={t("settings.quickAppearanceDesc")}
+                    checked={draft.quickShowAppearance}
+                    onPatch={patch}
+                  />
+                  <ToggleRow
+                    field="quickShowViewMode"
+                    title={t("settings.quickViewMode")}
+                    desc={t("settings.quickViewModeDesc")}
+                    checked={draft.quickShowViewMode}
+                    onPatch={patch}
+                  />
+                  <ToggleRow
+                    field="quickShowColors"
+                    title={t("settings.quickColors")}
+                    desc={t("settings.quickColorsDesc")}
+                    checked={draft.quickShowColors}
+                    onPatch={patch}
+                  />
+                  <ToggleRow
+                    field="enableAdminButton"
+                    title={t("settings.quickAdmin")}
+                    desc={t("settings.quickAdminDesc")}
+                    checked={draft.enableAdminButton}
+                    onPatch={patch}
+                  />
+                </div>
+                <p className="mt-3 setting-hint">{t("settings.quickHint")}</p>
               </InstancePanel>
 
               <InstancePanel

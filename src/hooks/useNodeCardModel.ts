@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { useMemo } from "react";
 import { useHourlyClock, useMinuteClock } from "@/hooks/useClock";
 import { useNodeCardSnapshots, useShowThreeNetDetails } from "@/hooks/useNode";
@@ -262,7 +263,17 @@ export function useNodeCardModel(
       color: trafficColor,
       remainingLabel: trafficUsage.unlimited ? "∞" : formatBytes(trafficUsage.remaining),
       detail: `${trafficUsedLabel} / ${trafficLimitLabel}`,
-      typeLabel: trafficTypeLabel(meta.traffic_limit_type),
+      tooltip: trafficUsage.unlimited
+        ? t("card.trafficTipUnlimited", {
+            used: trafficUsedLabel,
+            rule: trafficTypeLabel(meta.traffic_limit_type),
+          })
+        : t("card.trafficTip", {
+            used: trafficUsedLabel,
+            limit: trafficLimitLabel,
+            remaining: formatBytes(trafficUsage.remaining),
+            rule: trafficTypeLabel(meta.traffic_limit_type),
+          }),
     };
 
     return {

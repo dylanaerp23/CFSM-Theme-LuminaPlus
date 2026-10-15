@@ -134,7 +134,7 @@ export const NodeCard = memo(function NodeCard({
             litCount={trafficQuotaLitCount(traffic.fraction)}
             remainingLabel={traffic.remainingLabel}
             detail={traffic.detail}
-            typeLabel={traffic.typeLabel}
+            tooltip={traffic.tooltip}
           />
 
           {showConnections && (
@@ -369,17 +369,17 @@ const NodeTrafficQuota = memo(function NodeTrafficQuota({
   litCount,
   remainingLabel,
   detail,
-  typeLabel,
+  tooltip,
 }: {
   litCount: number;
   remainingLabel: string;
   detail: string;
-  typeLabel: string;
+  tooltip: string;
 }) {
   return (
     <div
       className="card-metric-section traffic-quota"
-      title={t("card.trafficQuotaTitle", { type: typeLabel })}
+      title={tooltip}
     >
       <div className="traffic-quota-head">
         <span className="traffic-quota-label">

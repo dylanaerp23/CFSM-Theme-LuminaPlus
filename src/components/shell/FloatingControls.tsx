@@ -49,8 +49,11 @@ export function FloatingControls({
   const showAdmin = settingsReady && themeSettings.enableAdminButton;
   // 主题设置与配色都只保存在本机浏览器（第三方主题不能写后端配置），
   // 因此对所有访客开放，各自调各自的。
+  // 哪些按钮显示由「设置 → 外观 → 快捷栏」决定；主题设置按钮不让关，否则关光了就回不到设置页。
   const showThemeManage = settingsReady;
-  const showColorPicker = settingsReady;
+  const showAppearance = settingsReady && themeSettings.quickShowAppearance;
+  const showViewMode = settingsReady && themeSettings.quickShowViewMode;
+  const showColorPicker = settingsReady && themeSettings.quickShowColors;
   const showSyncWarning = failureStreak >= 2;
   const hiddenTabIndex = collapsed ? -1 : undefined;
   const ToggleIcon = collapsed ? ChevronLeft : ChevronRight;
@@ -81,65 +84,65 @@ export function FloatingControls({
       <div className="floating-controls-inner">
         <div className="floating-controls-row">
           <div className="floating-controls-actions" aria-hidden={collapsed}>
-            {settingsReady && (
-              <>
-                <div
-                  className="control-group floating-controls-appearance"
-                  role="group"
-                  aria-label={t("quick.appearance")}
-                >
-                  {APPEARANCE_OPTIONS.map(({ value, icon: Icon, labelKey }) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => setAppearance(value)}
-                      aria-label={t(labelKey)}
-                      aria-pressed={appearance === value}
-                      title={t(labelKey)}
-                      tabIndex={hiddenTabIndex}
-                      className={clsx(
-                        "control-button grid h-9 w-9 place-items-center",
-                        appearance === value && "control-toggle is-active",
-                      )}
-                    >
-                      <Icon size={16} />
-                    </button>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={toggleMode}
-                  aria-label={t("quick.switchView")}
-                  aria-pressed={isReducedView}
-                  title={t("quick.switchTo", { view: t(VIEW_MODE_META[nextMode].labelKey) })}
-                  tabIndex={hiddenTabIndex}
-                  className={clsx(
-                    "control-button grid h-9 w-9 place-items-center",
-                    isReducedView && "control-toggle is-active",
-                  )}
-                >
-                  <ViewIcon size={16} />
-                </button>
-                {showColorPicker && (
+            {showAppearance && (
+              <div
+                className="control-group floating-controls-appearance"
+                role="group"
+                aria-label={t("quick.appearance")}
+              >
+                {APPEARANCE_OPTIONS.map(({ value, icon: Icon, labelKey }) => (
                   <button
+                    key={value}
                     type="button"
-                    onClick={() => {
-                      setColorsMounted(true);
-                      setColorsOpen((value) => !value);
-                    }}
-                    aria-label={t("quick.cardColors")}
-                    aria-pressed={colorsOpen}
-                    title={t("quick.cardColors")}
+                    onClick={() => setAppearance(value)}
+                    aria-label={t(labelKey)}
+                    aria-pressed={appearance === value}
+                    title={t(labelKey)}
                     tabIndex={hiddenTabIndex}
                     className={clsx(
                       "control-button grid h-9 w-9 place-items-center",
-                      colorsOpen && "control-toggle is-active",
+                      appearance === value && "control-toggle is-active",
                     )}
                   >
-                    <Palette size={16} />
+                    <Icon size={16} />
                   </button>
+                ))}
+              </div>
+            )}
+            {showViewMode && (
+              <button
+                type="button"
+                onClick={toggleMode}
+                aria-label={t("quick.switchView")}
+                aria-pressed={isReducedView}
+                title={t("quick.switchTo", { view: t(VIEW_MODE_META[nextMode].labelKey) })}
+                tabIndex={hiddenTabIndex}
+                className={clsx(
+                  "control-button grid h-9 w-9 place-items-center",
+                  isReducedView && "control-toggle is-active",
                 )}
-              </>
+              >
+                <ViewIcon size={16} />
+              </button>
+            )}
+            {showColorPicker && (
+              <button
+                type="button"
+                onClick={() => {
+                  setColorsMounted(true);
+                  setColorsOpen((value) => !value);
+                }}
+                aria-label={t("quick.cardColors")}
+                aria-pressed={colorsOpen}
+                title={t("quick.cardColors")}
+                tabIndex={hiddenTabIndex}
+                className={clsx(
+                  "control-button grid h-9 w-9 place-items-center",
+                  colorsOpen && "control-toggle is-active",
+                )}
+              >
+                <Palette size={16} />
+              </button>
             )}
             {showThemeManage && (
               <Link

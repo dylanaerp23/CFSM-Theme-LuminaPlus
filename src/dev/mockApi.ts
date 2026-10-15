@@ -331,7 +331,7 @@ function buildHistory(serverId: string, hours: number) {
       loss_node_2: i % 23 === 0 ? 8 : 0,
       loss_node_3: false,
       loss_node_4: null,
-      load_avg: "0.42 0.38 0.31",
+      load_avg: `${(0.6 + Math.sin(phase) * 0.4).toFixed(2)} ${(0.55 + Math.sin(phase - 0.6) * 0.25).toFixed(2)} ${(0.5 + Math.sin(phase - 1.2) * 0.12).toFixed(2)}`,
       kernel_version: server.kernel_version,
     });
   }

@@ -366,7 +366,7 @@ const NodeRow = memo(function NodeRow({ uuid }: { uuid: string }) {
 
       <div
         className="node-list-cell col-traffic"
-        title={t("list.remainingTitle", { remaining: traffic.remainingLabel, detail: traffic.detail })}
+        title={traffic.tooltip}
       >
         <div className="node-list-traffic-rows">
           <StackLine icon={<ArrowUp size={11} strokeWidth={2.1} />} value={formatBytes(node.trafficUp)} />

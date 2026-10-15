@@ -605,7 +605,7 @@ export function mergeServerPatch(
  * ------------------------------------------------------------------ */
 
 export function historyRowToLoadRecord(row: HistoryRow, client: string): LoadRecord {
-  const [load1] = parseLoadAvg(row.load_avg);
+  const [load1, load5, load15] = parseLoadAvg(row.load_avg);
   const gpus = parseGpuInfo(row.gpu_info);
   return {
     cpu: row.cpu,
@@ -615,6 +615,8 @@ export function historyRowToLoadRecord(row: HistoryRow, client: string): LoadRec
     swap: row.swap_used * MIB,
     swap_total: row.swap_total * MIB,
     load: load1,
+    load5,
+    load15,
     // CF-Server-Monitor 不采集温度。
     temp: 0,
     disk: row.disk_used * MIB,

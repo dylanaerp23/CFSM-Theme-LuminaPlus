@@ -611,7 +611,7 @@ function CompactTrafficBar({
     <div
       className="compact-node-traffic"
       style={style}
-      title={`${t("card.traffic")} · ${traffic.typeLabel} · ${traffic.detail}${uptimeLabel ? ` · ${uptimeLabel}` : ""}`}
+      title={uptimeLabel ? `${traffic.tooltip}\n${uptimeLabel}` : traffic.tooltip}
     >
       <div className={clsx("compact-node-traffic-body", uptimeLabel && "has-uptime")}>
         {uptimeLabel ? (

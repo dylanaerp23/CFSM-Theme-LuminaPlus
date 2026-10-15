@@ -477,6 +477,10 @@ export interface ThemeSettings {
   desktopNodeViewMode?: "large" | "compact" | "mini" | "list";
   mobileNodeViewMode?: "large" | "compact" | "mini" | "list";
   enableAdminButton?: boolean;
+  /** 首页快捷栏里显示哪些按钮（主题设置按钮一直显示，不然访客回不到设置页）。 */
+  quickShowAppearance?: boolean;
+  quickShowViewMode?: boolean;
+  quickShowColors?: boolean;
   showPingChart?: boolean;
   homepagePingBindings?: Record<string, string[]>;
   homepageDefaultPingTaskId?: number;
@@ -527,7 +531,10 @@ export interface LoadRecord {
   ram_total: number;
   swap: number;
   swap_total: number;
+  /** 1 分钟负载（后端历史存的是整串 load_avg）。 */
   load: number;
+  load5: number;
+  load15: number;
   temp: number;
   disk: number;
   disk_total: number;

@@ -6,7 +6,8 @@ export interface TrafficDisplay {
   color: string;
   remainingLabel: string;
   detail: string;
-  typeLabel: string;
+  /** 悬停提示：已用 / 总量 / 剩余，下一行写已用量怎么算（原来是「流量阈值 · 仅上行」，像在介绍两项指标）。 */
+  tooltip: string;
 }
 
 function nonNegative(value: number): number {
@@ -60,6 +61,7 @@ export function resolveTrafficUsage(
   return { used, limit, unlimited, remaining, fraction };
 }
 
+/** 已用量的计算方式，一句话说清（悬停提示的第二行）。 */
 export function trafficTypeLabel(type: string | null | undefined): string {
   switch ((type ?? "").trim().toLowerCase()) {
     case "up":
