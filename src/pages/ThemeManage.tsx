@@ -50,6 +50,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import { Flag } from "@/components/ui/Flag";
 import { useCarrierNames, usePublicConfig } from "@/hooks/usePublicConfig";
 import { useHourlyClock } from "@/hooks/useClock";
+import { followDefaultAppearance } from "@/hooks/usePreferences";
 import { useAllPingLineOverrides } from "@/hooks/usePingOverview";
 import {
   cancelSiteThemeSync,
@@ -1637,7 +1638,10 @@ export function ThemeManage() {
                       type="button"
                       data-active={draft.defaultAppearance === value ? "true" : "false"}
                       aria-pressed={draft.defaultAppearance === value}
-                      onClick={() => patch("defaultAppearance", value)}
+                      onClick={() => {
+                        patch("defaultAppearance", value);
+                        followDefaultAppearance(value);
+                      }}
                       className="inline-flex items-center justify-center gap-2"
                     >
                       <Icon size={14} />

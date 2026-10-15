@@ -1989,14 +1989,6 @@ body::after {
   border-radius: 999px;
 }
 
-.instance-ping-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
 .instance-ping-tasks {
   display: flex;
   flex-wrap: wrap;
@@ -2132,10 +2124,15 @@ body::after {
     border-radius: 16px;
   }
 
+  /* 原来还有 padding-right: 88px（Komari 移植时带过来的，右边早就没有要让开的东西了），
+     把标题行右侧的开关挤成一列，Ping 图头部在手机上有 200 多像素高。 */
   .instance-chart-panel .instance-panel-header {
     flex-direction: column;
     align-items: flex-start;
-    padding-right: 88px;
+  }
+
+  .instance-chart-headmeta {
+    justify-content: flex-start;
   }
 
   .instance-chart-grid {
@@ -2157,12 +2154,6 @@ body::after {
 
   .instance-info-groups {
     grid-template-columns: 1fr;
-  }
-
-  .instance-ping-toolbar {
-    justify-content: flex-start;
-    overflow-x: auto;
-    padding-bottom: 2px;
   }
 
   .instance-chart-meta {

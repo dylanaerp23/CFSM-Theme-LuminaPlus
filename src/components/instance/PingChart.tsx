@@ -347,8 +347,6 @@ export function PingChart({
         : t("duration.seconds", { n: Math.round(seconds) });
     return t("ping.interval", { interval: text });
   }, [sortedRecords]);
-  const panelDescription =
-    [coverageLabel, samplingLabel].filter(Boolean).join(" · ") || undefined;
 
   // 纵轴恒定从 0 起：截取中间一段会把 210ms 和 240ms 画成天差地别，看不出真实量级。
   const yRange = useMemo<[number | null, number | null]>(() => {
@@ -583,42 +581,54 @@ export function PingChart({
   }
 
   return (
-    <InstancePanel title={t("ping.chartTitle")} description={panelDescription}>
-      <div className="instance-ping-toolbar">
-        <SwitchToggle
-          label={t("ping.lossStrip")}
-          active={showLoss}
-          onToggle={() => setShowLoss((value) => !value)}
-          title={t("ping.lossStripTitle")}
-        />
-        <SwitchToggle
-          label={t("ping.cutPeak")}
-          active={cutPeak}
-          onToggle={() => setCutPeak((value) => !value)}
-          title={t("ping.cutPeakTitle")}
-        />
-        <SwitchToggle
-          label={t("chart.connectGaps")}
-          active={connectNulls}
-          onToggle={() => setConnectNulls((value) => !value)}
-          title={t("ping.connectGapsTitle")}
-        />
-        <button type="button" className="instance-toggle-button" onClick={toggleAll}>
-          {hiddenTasks.size === 0 ? <EyeOff size={14} aria-hidden /> : <Eye size={14} aria-hidden />}
-          {hiddenTasks.size === 0 ? t("ping.hideAll") : t("ping.showAll")}
-        </button>
-        <button
-          type="button"
-          className="instance-toggle-button"
-          onClick={refetchAll}
-          disabled={isFetching}
-          aria-busy={isFetching}
-        >
-          <RefreshCw size={14} aria-hidden />
-          {isFetching ? t("common.refreshing") : isError ? t("ping.refreshFailed") : t("common.refresh")}
-        </button>
-      </div>
-
+    <InstancePanel
+      title={t("ping.chartTitle")}
+      className="instance-chart-panel"
+      // 覆盖范围、采样间隔和几个开关并进标题行右侧（和「系统资源」同一个写法），
+      // 原来说明一行、开关一行，图上面空出一大截（站长 2026-10-15）。
+      aside={
+        <div className="instance-chart-headmeta">
+          {(coverageLabel || samplingLabel) && (
+            <div className="instance-chart-meta" aria-label={t("chart.rangeLabel")}>
+              {coverageLabel && <span><strong>{coverageLabel}</strong></span>}
+              {samplingLabel && <span>{samplingLabel}</span>}
+            </div>
+          )}
+          <SwitchToggle
+            label={t("ping.lossStrip")}
+            active={showLoss}
+            onToggle={() => setShowLoss((value) => !value)}
+            title={t("ping.lossStripTitle")}
+          />
+          <SwitchToggle
+            label={t("ping.cutPeak")}
+            active={cutPeak}
+            onToggle={() => setCutPeak((value) => !value)}
+            title={t("ping.cutPeakTitle")}
+          />
+          <SwitchToggle
+            label={t("chart.connectGaps")}
+            active={connectNulls}
+            onToggle={() => setConnectNulls((value) => !value)}
+            title={t("ping.connectGapsTitle")}
+          />
+          <button type="button" className="instance-toggle-button" onClick={toggleAll}>
+            {hiddenTasks.size === 0 ? <EyeOff size={14} aria-hidden /> : <Eye size={14} aria-hidden />}
+            {hiddenTasks.size === 0 ? t("ping.hideAll") : t("ping.showAll")}
+          </button>
+          <button
+            type="button"
+            className="instance-toggle-button"
+            onClick={refetchAll}
+            disabled={isFetching}
+            aria-busy={isFetching}
+          >
+            <RefreshCw size={14} aria-hidden />
+            {isFetching ? t("common.refreshing") : isError ? t("ping.refreshFailed") : t("common.refresh")}
+          </button>
+        </div>
+      }
+    >
       <div className="instance-ping-tasks">
         {taskStats.map((task) => {
           const visible = !hiddenTasks.has(task.id);
